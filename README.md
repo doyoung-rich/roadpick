@@ -9,7 +9,7 @@
 - 모든 본문·목차·카테고리는 초기 HTML에 포함됩니다.
 - 검색 제외(`noindex`) 시안입니다. 공개 주소를 배포하면 URL을 아는 사람은 열람할 수 있습니다. `noindex`는 접근 제한이 아닙니다.
 - 운영자 표시명은 로드픽, 공개 문의 이메일은 godwd25@gmail.com입니다. 소개·작성 기준·문의와 현재 기능에 맞는 개인정보·이용 안내를 제공합니다. 이메일 문의 보관 기준 등 남은 운영 방침은 정식 공개 전에 확인합니다.
-- 개설 저장소: https://github.com/doyoung-rich/roadpick (공개). 검색 제외 임시 배포를 사용하며 맞춤 도메인·광고·댓글 저장 기능은 아직 연결하지 않았습니다.
+- 개설 저장소: https://github.com/doyoung-rich/roadpick (공개). 대표 주소는 https://roadpick.store/ 이며 검색 제외 시안을 유지합니다. 광고·댓글 저장 기능은 연결하지 않았습니다.
 
 ## 글을 추가하는 방법
 
@@ -148,7 +148,7 @@ npm run preview
 3. `main` 브랜치에 저장하면 포함된 워크플로가 HTML을 만들고 배포합니다.
 4. Actions에서 빌드와 배포의 성공을 각각 확인하고, 실제 반환된 주소에서 메뉴·글·이미지를 확인합니다.
 
-저장소 경로는 GitHub Pages 설정에서 자동으로 전달되므로 `/저장소이름/` 아래에서도 내부 링크와 이미지가 동작합니다. 도메인을 구매하거나 연결하지 않습니다.
+맞춤 도메인 https://roadpick.store/ 을 사용하므로 배포 워크플로의 BASE_PATH는 빈 값, SITE_URL은 해당 HTTPS 주소로 고정되어 있습니다. 도메인을 바꾸면 GitHub Pages 설정, DNS와 워크플로의 SITE_URL을 함께 수정해야 합니다.
 
 설정 근거: [GitHub 공식 Pages 워크플로 안내](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
 
