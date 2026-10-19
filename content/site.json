@@ -1,0 +1,118 @@
+{
+  "name": "로드픽",
+  "temporaryName": false,
+  "description": "일상에 필요한 정보를 한국어와 영어로 정리하는 로드픽입니다.",
+  "preview": true,
+  "basePath": "",
+  "siteUrl": "",
+  "recommendedArticles": [
+    "service-guide",
+    "reservation-guide"
+  ],
+  "categories": [
+    {
+      "name": "생활정보",
+      "menuLabel": "생활정보",
+      "slug": "living",
+      "image": "life.svg",
+      "aliases": [
+        "생활",
+        "생활·노하우·쇼핑",
+        "일상·생각",
+        "육아·결혼",
+        "반려동물",
+        "좋은글·이미지",
+        "패션·미용",
+        "인테리어·DIY",
+        "요리·레시피",
+        "상품리뷰",
+        "원예·재배"
+      ],
+      "enName": "Everyday life",
+      "enMenuLabel": "Living"
+    },
+    {
+      "name": "금융·보험",
+      "menuLabel": "금융",
+      "slug": "finance",
+      "image": "application.svg",
+      "aliases": [
+        "보험",
+        "비즈니스·경제",
+        "경제"
+      ],
+      "enName": "Finance & insurance",
+      "enMenuLabel": "Finance"
+    },
+    {
+      "name": "문화·공연",
+      "menuLabel": "문화",
+      "slug": "culture",
+      "image": "reservation.svg",
+      "aliases": [
+        "엔터테인먼트·예술",
+        "문학·책",
+        "영화",
+        "미술·디자인",
+        "공연·전시",
+        "음악",
+        "드라마",
+        "스타·연예인",
+        "만화·애니",
+        "방송"
+      ],
+      "enName": "Culture & events",
+      "enMenuLabel": "Culture"
+    },
+    {
+      "name": "여행·맛집",
+      "menuLabel": "여행",
+      "slug": "travel",
+      "image": "leisure.svg",
+      "aliases": [
+        "국내여행",
+        "세계여행",
+        "맛집"
+      ],
+      "enName": "Travel & food",
+      "enMenuLabel": "Travel"
+    },
+    {
+      "name": "스포츠·취미",
+      "menuLabel": "스포츠",
+      "slug": "leisure",
+      "image": "leisure.svg",
+      "aliases": [
+        "취미·여가·여행",
+        "게임",
+        "사진",
+        "자동차",
+        "취미"
+      ],
+      "enName": "Sports & hobbies",
+      "enMenuLabel": "Sports"
+    },
+    {
+      "name": "지식·정보",
+      "menuLabel": "정보",
+      "slug": "knowledge",
+      "image": "application.svg",
+      "aliases": [
+        "지식·동향",
+        "IT·컴퓨터",
+        "IT",
+        "사회·정치",
+        "건강·의학",
+        "어학·외국어",
+        "교육·학문"
+      ],
+      "enName": "Knowledge & technology",
+      "enMenuLabel": "Insights"
+    }
+  ],
+  "enName": "ROAD-PEAK",
+  "enDescription": "ROAD-PEAK brings practical information together in Korean and English.",
+  "brandImage": "assets/brand/roadpeak.webp",
+  "contactEmail": "godwd25@gmail.com",
+  "operatorName": "로드픽"
+}
