@@ -25,8 +25,8 @@ jobs:
       - name: Build static HTML
         run: node scripts/build.mjs
         env:
-          BASE_PATH: ${{ steps.pages.outputs.base_path }}
-          SITE_URL: ${{ steps.pages.outputs.base_url }}
+          BASE_PATH: ''
+          SITE_URL: https://roadpick.store
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
