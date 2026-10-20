@@ -75,14 +75,26 @@ async function renderMarkdown(markdown, lang) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) { flushParagraph(); closeList(); continue; }
-    const image = /^!\[([^\]]+)\]\((assets\/images\/[a-zA-Z0-9/_-]+\.png)\)$/.exec(line);
+    const image = /^!\[([^\]]+)\]\((assets\/images\/[a-zA-Z0-9/_-]+\.(?:png|jpe?g))\)$/.exec(line);
     if (image) {
       flushParagraph(); closeList();
       const [, alt, source] = image;
       if (source.split('/').some(part => part === '.' || part === '..')) throw new Error('Invalid article image path.');
       const bytes = await readFile(path.join(root, source));
-      if (bytes.length < 24 || bytes.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('Article image must be a valid PNG.');
-      const width = bytes.readUInt32BE(16), height = bytes.readUInt32BE(20);
+      let width, height;
+      if (bytes.length >= 24 && bytes.subarray(0, 8).toString('hex') === '89504e470d0a1a0a') {
+        width = bytes.readUInt32BE(16); height = bytes.readUInt32BE(20);
+      } else if (bytes.length >= 4 && bytes.readUInt16BE(0) === 0xffd8) {
+        for (let offset = 2; offset + 9 < bytes.length;) {
+          if (bytes[offset] !== 0xff) break;
+          const marker = bytes[offset + 1], length = bytes.readUInt16BE(offset + 2);
+          if (length < 2 || offset + length + 2 > bytes.length) break;
+          if ([0xc0,0xc1,0xc2,0xc3,0xc5,0xc6,0xc7,0xc9,0xca,0xcb,0xcd,0xce,0xcf].includes(marker)) {
+            height = bytes.readUInt16BE(offset + 5); width = bytes.readUInt16BE(offset + 7); break;
+          }
+          offset += length + 2;
+        }
+      }
       if (!width || !height) throw new Error('Article image dimensions are missing.');
       html.push(`<figure class="article-figure"><a href="${href(source)}" aria-label="${escape(alt)}"><img src="${href(source)}" width="${width}" height="${height}" alt="${escape(alt)}" loading="lazy" decoding="async"></a><figcaption>${escape(alt)}</figcaption></figure>`);
       continue;
