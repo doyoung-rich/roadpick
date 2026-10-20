@@ -65,7 +65,7 @@ const inline = value => {
     .replace(/`([^`]+)`/g, '<code>$1</code>');
 };
 
-function renderMarkdown(markdown, lang) {
+async function renderMarkdown(markdown, lang) {
   const ui = locales[lang];
   const lines = markdown.replace(/\r/g, '').split('\n');
   const html = [], toc = [];
@@ -75,8 +75,21 @@ function renderMarkdown(markdown, lang) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) { flushParagraph(); closeList(); continue; }
-    if (line === ':::cta') {
+    const image = /^!\[([^\]]+)\]\((assets\/images\/[a-zA-Z0-9/_-]+\.png)\)$/.exec(line);
+    if (image) {
       flushParagraph(); closeList();
+      const [, alt, source] = image;
+      if (source.split('/').some(part => part === '.' || part === '..')) throw new Error('Invalid article image path.');
+      const bytes = await readFile(path.join(root, source));
+      if (bytes.length < 24 || bytes.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('Article image must be a valid PNG.');
+      const width = bytes.readUInt32BE(16), height = bytes.readUInt32BE(20);
+      if (!width || !height) throw new Error('Article image dimensions are missing.');
+      html.push(`<figure class="article-figure"><a href="${href(source)}" aria-label="${escape(alt)}"><img src="${href(source)}" width="${width}" height="${height}" alt="${escape(alt)}" loading="lazy" decoding="async"></a><figcaption>${escape(alt)}</figcaption></figure>`);
+      continue;
+    }
+    if (line === ':::cta' || line === ':::cta hand') {
+      flushParagraph(); closeList();
+      const hand = line === ':::cta hand';
       const description = [], links = [];
       while (++i < lines.length && lines[i].trim() !== ':::') {
         const row = lines[i].trim();
@@ -93,7 +106,8 @@ function renderMarkdown(markdown, lang) {
       }
       if (i >= lines.length) throw new Error('CTA block is missing its closing :::.');
       if (!links.length) throw new Error('A CTA block must contain at least one button link.');
-      html.push(`<nav class="article-cta" aria-label="${ui.cta}">${description.length ? `<p class="article-cta-description">${inline(description.join(' '))}</p>` : ''}<div class="article-cta-buttons">${links.map(link => `<a class="article-cta-button" href="${escape(link.url)}"><span class="cta-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" focusable="false"><path d="M4 12h15m-6-6 6 6-6 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>${escape(link.label)}</span></a>`).join('')}</div></nav>`);
+      const icon = hand ? '<span class="cta-icon cta-icon-hand" aria-hidden="true">👉</span>' : '<span class="cta-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" focusable="false"><path d="M4 12h15m-6-6 6 6-6 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+      html.push(`<nav class="article-cta" aria-label="${ui.cta}">${description.length ? `<p class="article-cta-description">${inline(description.join(' '))}</p>` : ''}<div class="article-cta-buttons">${links.map(link => `<a class="article-cta-button" href="${escape(link.url)}">${icon}<span>${escape(link.label)}</span></a>`).join('')}</div></nav>`);
       continue;
     }
     const heading = /^(#{2,3})\s+(.+)$/.exec(line);
@@ -168,7 +182,7 @@ for (const { file, lang, directory } of files) {
     if (!/^assets\/images\/[a-zA-Z0-9/_-]+\.(?:webp|png|jpe?g|avif)$/.test(cover) || cover.split('/').some(part => part === '.' || part === '..')) throw new Error(`${file}: cover must be a local image in assets/images/.`);
     if (!(await lstat(path.join(root, cover))).isFile()) throw new Error(`${file}: cover image is missing.`);
   }
-  const rendered = renderMarkdown(match[2], lang);
+  const rendered = await renderMarkdown(match[2], lang);
   const bodyText = rendered.html.replace(/<[^>]*>/g, ' ').replace(/&(amp|lt|gt|quot|#39);/g, entity => ({'&amp;':'&','&lt;':'<','&gt;':'>','&quot;':'"','&#39;':"'"}[entity])).replace(/\s+/g, ' ');
   const searchText = [metadata.title, metadata.description, metadata.summary, categoryName(category, lang), categoryLabel(category, lang), keywords.join(' '), bodyText].join(' ');
   articles.push({ ...metadata, cover, lang, translationKey, keywords, slug, category, searchText, ...rendered });
@@ -186,8 +200,9 @@ for (const key of recommendedSlugs) if (!articles.some(article => article.transl
 
 function readingSuggestions(article) {
   const { lang } = article, ui = locales[lang];
-  const sameLanguage = articles.filter(candidate => candidate.lang === lang);
-  const picks = [...new Set(recommendedSlugs)].map(key => articleByTranslation.get(`${lang}:${key}`)).filter(candidate => candidate && candidate.slug !== article.slug).slice(0, 3);
+  const eligible = candidate => candidate && candidate.lang === lang && (article.status !== 'ready' || candidate.status === 'ready');
+  const sameLanguage = articles.filter(eligible);
+  const picks = [...new Set(recommendedSlugs)].map(key => articleByTranslation.get(`${lang}:${key}`)).filter(candidate => eligible(candidate) && candidate.slug !== article.slug).slice(0, 3);
   const reserved = new Set(picks.map(candidate => candidate.slug));
   const keywords = new Set(article.keywords);
   const related = sameLanguage.filter(candidate => candidate.slug !== article.slug && !reserved.has(candidate.slug)).map(candidate => {
@@ -197,6 +212,7 @@ function readingSuggestions(article) {
   }).filter(candidate => candidate.sharedKeywords > 0 || candidate.sameCategory)
     .sort((a, b) => b.sharedKeywords - a.sharedKeywords || Number(b.sameCategory) - Number(a.sameCategory) || (b.article.date || '').localeCompare(a.article.date || '') || a.article.slug.localeCompare(b.article.slug))
     .slice(0, 3).map(candidate => candidate.article);
+  if (!related.length && !picks.length) return '';
   const readingList = entries => `<ul class="reading-list">${entries.map(candidate => `<li><a class="reading-button" href="${href(articleRoute(candidate))}"><span class="cta-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" focusable="false"><path d="M4 12h15m-6-6 6 6-6 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><strong>${escape(candidate.title)}</strong></a></li>`).join('')}</ul>`;
   const section = (title, entries, key) => entries.length ? `<section class="reading-group" aria-labelledby="reading-${key}"><h3 id="reading-${key}">${title}</h3>${readingList(entries)}</section>` : '';
   return `<section class="article-discovery" id="more-articles" aria-labelledby="discovery-title"><div class="discovery-heading"><h2 id="discovery-title">${ui.discovery}</h2><p>${ui.discoveryText}</p></div>${section(ui.related, related, 'related')}${section(ui.recommended, picks, 'recommended')}<nav class="discovery-footer" aria-label="${ui.discoverMore}"><a href="${href(categoryRoute(article.category, lang))}">${escape(ui.categoryMore(categoryName(article.category, lang)))} <span aria-hidden="true">→</span></a><a href="${href(localizedRoute('articles/', lang))}">${ui.allLink} <span aria-hidden="true">→</span></a></nav></section>`;

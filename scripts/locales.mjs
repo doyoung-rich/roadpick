@@ -4,7 +4,7 @@ export const locales = {
   ko: {
     home: '홈', temporary: '가칭', skip: '본문으로 바로가기', menu: '주 메뉴',
     language: '언어 선택', searchLabel: '사이트 글 검색', searchPlaceholder: '찾고 싶은 내용을 검색하세요', search: '검색',
-    preview: '개설 시안', previewText: '기능 확인용 예시 글입니다. 실제 원고를 준비 중입니다.',
+    preview: '개설 시안', previewText: '검색 제외 상태의 개설 시안입니다. 예시 표시는 화면 확인용 글입니다.',
     footerNote: '로드픽 개설 시안입니다. 예시 글은 실제 이용 안내가 아닙니다.',
     siteInfo: '사이트 안내', location: '현재 위치', cta: '관련 안내 바로가기', table: '내용 비교표',
     sample: '구성 확인용 예시', read: '글 읽기', readLabel: title => `${title} 읽기`,
@@ -33,7 +33,7 @@ export const locales = {
   en: {
     home: 'Home', temporary: 'Draft name', skip: 'Skip to content', menu: 'Main navigation',
     language: 'Language', searchLabel: 'Search articles', searchPlaceholder: 'Search for a topic', search: 'Search',
-    preview: 'Preview', previewText: 'Sample articles demonstrate the site. Actual content is being prepared.',
+    preview: 'Preview', previewText: 'This preview is excluded from search. Articles marked as samples demonstrate the layout.',
     footerNote: 'ROAD-PEAK preview. Sample articles are not completed practical guides.',
     siteInfo: 'Site information', location: 'You are here', cta: 'Related guides', table: 'Comparison table',
     sample: 'Layout sample', read: 'Read article', readLabel: title => `Read ${title}`,
