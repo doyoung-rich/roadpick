@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { languages, locales } from './locales.mjs';
 import { siteInfo } from './site-info.mjs';
+import { jsonLd, pageMetadata, sitemapXml } from './metadata.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = path.join(root, 'dist');
@@ -38,7 +39,10 @@ const categories = site.categories.map(group => {
   return { ...group, group };
 });
 if (new Set(categories.map(c => c.name)).size !== categories.length || new Set(categories.map(c => c.slug)).size !== categories.length) throw new Error('Category names and slugs must be unique.');
-const breadcrumb = (items, lang) => `<nav class="breadcrumb" aria-label="${locales[lang].location}">${items.map((item, i) => `${i ? '<span aria-hidden="true">›</span>' : ''}${item.route !== undefined ? `<a href="${href(item.route)}">${escape(item.label)}</a>` : `<span aria-current="page">${escape(item.label)}</span>`}`).join('')}</nav>`;
+const breadcrumb = (items, lang, structured = true) => {
+  const nav = `<nav class="breadcrumb" aria-label="${locales[lang].location}">${items.map((item, i) => `${i ? '<span aria-hidden="true">›</span>' : ''}${item.route !== undefined ? `<a href="${href(item.route)}">${escape(item.label)}</a>` : `<span aria-current="page">${escape(item.label)}</span>`}`).join('')}</nav>`;
+  return nav + (siteUrl && structured && items.length > 1 ? jsonLd({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: items.map((item, i) => ({ '@type': 'ListItem', position: i + 1, name: item.label, ...(item.route !== undefined ? { item: `${siteUrl}/${item.route}` } : {}) })) }) : '');
+};
 const ctaTargets = [];
 function ctaLink(target) {
   if (/\s|\\/.test(target)) throw new Error(`Invalid button link: ${target}`);
@@ -142,6 +146,7 @@ for (const { file, lang, directory } of files) {
     return [line.slice(0, colon).trim(), line.slice(colon + 1).trim()];
   }));
   if (metadata.status === 'draft') continue;
+  if (!['ready', 'sample'].includes(metadata.status)) throw new Error(`${file}: status must be draft, sample or ready.`);
   if (metadata.lang && metadata.lang !== lang) throw new Error(`${file}: lang must match its directory (${lang}).`);
   if (!site.preview && metadata.status === 'sample') throw new Error('Sample articles must be replaced before public indexing.');
   if (!metadata.title || !metadata.summary || !metadata.description) throw new Error(`${file}: title, summary and description are required.`);
@@ -151,7 +156,12 @@ for (const { file, lang, directory } of files) {
   if (!/^[a-z0-9-]+$/.test(slug)) throw new Error(`${file}: use lowercase letters and hyphens in filenames.`);
   const translationKey = metadata.translationKey || slug;
   if (!/^[a-z0-9-]+$/.test(translationKey)) throw new Error(`${file}: translationKey must use lowercase letters, digits and hyphens.`);
-  if (metadata.date && !/^\d{4}-\d{2}-\d{2}$/.test(metadata.date)) throw new Error(`${file}: date must be YYYY-MM-DD.`);
+  for (const field of ['date', 'modified']) {
+    const date = metadata[field];
+    if (date && (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date)) throw new Error(`${file}: ${field} must be a real YYYY-MM-DD date.`);
+  }
+  if (metadata.modified && !metadata.date) throw new Error(`${file}: modified requires the original date.`);
+  if (metadata.modified && metadata.modified < metadata.date) throw new Error(`${file}: modified cannot precede date.`);
   const keywords = [...new Set((metadata.keywords || '').split(',').map(word => word.normalize('NFKC').replace(/\s+/g, '').toLowerCase()).filter(Boolean))];
   const cover = metadata.cover || `assets/${category.image}`;
   if (metadata.cover) {
@@ -215,7 +225,7 @@ function header(active, lang, variants) {
 
 const footer = lang => {
   const ui = locales[lang];
-  return `<footer class="site-footer"><div class="footer-inner"><p class="footer-brand">${escape(siteName(lang))}${site.temporaryName ? ` <small>${ui.temporary}</small>` : ''}</p><nav aria-label="${ui.siteInfo}">${Object.entries(ui.info).map(([route, info]) => `<a href="${href(localizedRoute(`${route}/`, lang))}">${info.title}</a>`).join('')}</nav><p class="footer-note">${site.preview ? ui.footerNote : escape(siteDescription(lang))}</p><p class="copyright">© ${escape(siteName(lang))}</p></div></footer>`;
+  return `<footer class="site-footer"><div class="footer-inner"><p class="footer-brand">${escape(siteName(lang))}${site.temporaryName ? ` <small>${ui.temporary}</small>` : ''}</p><nav aria-label="${ui.siteInfo}"><a href="${href(localizedRoute('articles/', lang))}">${ui.allLink}</a>${Object.entries(ui.info).map(([route, info]) => `<a href="${href(localizedRoute(`${route}/`, lang))}">${info.title}</a>`).join('')}</nav><p class="footer-note">${site.preview ? ui.footerNote : escape(siteDescription(lang))}</p><p class="copyright">© ${escape(siteName(lang))}</p></div></footer>`;
 };
 
 const builtRoutes = [];
@@ -223,21 +233,28 @@ async function save(route, title, description, content, lang, active = '', artic
   const ui = locales[lang];
   const actualRoute = localizedRoute(route, lang);
   const variants = articleVariants ?? Object.fromEntries(languages.map(other => [other, localizedRoute(route, other)]));
-  const canonical = siteUrl ? `${siteUrl}/${actualRoute}` : '';
-  const sharing = canonical ? `<meta property="og:type" content="${route.startsWith('articles/') && route !== 'articles/' ? 'article' : 'website'}"><meta property="og:site_name" content="${escape(siteName(lang))}"><meta property="og:title" content="${escape(title)}"><meta property="og:description" content="${escape(description)}"><meta property="og:url" content="${escape(canonical)}"><meta property="og:image" content="${escape(`${siteUrl}/${site.brandImage}`)}"><meta property="og:image:alt" content="ROAD-PEAK — DRIVE THE PEAK"><meta name="twitter:card" content="summary">` : '';
-  const alternates = siteUrl && Object.keys(variants).length > 1 ? Object.entries(variants).map(([other, otherRoute]) => `<link rel="alternate" hreflang="${other}" href="${escape(`${siteUrl}/${otherRoute}`)}">`).join('') : '';
+  const article = articles.find(a => a.lang === lang && route === `articles/${a.slug}/`);
+  const emptyCategory = route.startsWith('category/') && !articles.some(a => a.lang === lang && route === `category/${a.category.slug}/`);
+  const noindex = site.preview || route === '404/' || article?.status === 'sample' || emptyCategory;
+  const canonical = siteUrl && route !== '404/' ? `${siteUrl}/${actualRoute}` : '';
+  const shareImage = article?.cover ? `${siteUrl}/${article.cover}` : `${siteUrl}/${site.brandImage}`;
+  const shareAlt = article ? article.coverSample === 'true' ? lang === 'ko' ? 'AI가 만든 화면 구성용 예시 이미지' : 'AI-generated layout illustration' : article.title : 'ROAD-PEAK — DRIVE THE PEAK';
+  const shareLocale = lang === 'ko' ? 'ko_KR' : 'en_US';
+  const sharing = canonical ? `<meta property="og:type" content="${article?.status === 'ready' ? 'article' : 'website'}"><meta property="og:site_name" content="${escape(siteName(lang))}"><meta property="og:title" content="${escape(title)}"><meta property="og:description" content="${escape(description)}"><meta property="og:url" content="${escape(canonical)}"><meta property="og:locale" content="${shareLocale}">${Object.keys(variants).filter(other => other !== lang).map(other => `<meta property="og:locale:alternate" content="${other === 'ko' ? 'ko_KR' : 'en_US'}">`).join('')}<meta property="og:image" content="${escape(shareImage)}"><meta property="og:image:alt" content="${escape(shareAlt)}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="${escape(title)}"><meta name="twitter:description" content="${escape(description)}"><meta name="twitter:image" content="${escape(shareImage)}"><meta name="twitter:image:alt" content="${escape(shareAlt)}">` : '';
+  const alternates = canonical && Object.keys(variants).length > 1 ? Object.entries(variants).map(([other, otherRoute]) => `<link rel="alternate" hreflang="${other}" href="${escape(`${siteUrl}/${otherRoute}`)}">`).join('') : '';
+  const schema = pageMetadata({ site: { ...site, siteUrl }, lang, route, canonical, title, description, article, emptyCategory });
   const html = `<!doctype html>
-<html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escape(title)}${title === siteName(lang) ? '' : ` | ${escape(siteName(lang))}`}</title><meta name="description" content="${escape(description)}"><meta name="robots" content="${site.preview ? 'noindex,follow' : 'index,follow'}">${canonical ? `<link rel="canonical" href="${escape(canonical)}">` : ''}${alternates}${sharing}<meta name="theme-color" content="#ffffff"><link rel="icon" href="${href('assets/favicon.svg')}" type="image/svg+xml"><link rel="stylesheet" href="${href('assets/style.css')}"></head><body>${header(active, lang, variants)}${site.preview ? `<div class="preview-note"><span class="preview-dot" aria-hidden="true"></span>${ui.preview} <span class="preview-divider">·</span> ${ui.previewText}</div>` : ''}${content}${footer(lang)}<script src="${href('assets/search.js')}" defer></script></body></html>`;
+<html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escape(title)}${title === siteName(lang) ? '' : ` | ${escape(siteName(lang))}`}</title><meta name="description" content="${escape(description)}"><meta name="robots" content="${noindex ? 'noindex,follow' : 'index,follow'}">${canonical ? `<link rel="canonical" href="${escape(canonical)}">` : ''}${alternates}${sharing}${schema}<meta name="theme-color" content="#ffffff"><link rel="icon" href="${href('assets/favicon.svg')}" type="image/svg+xml"><link rel="stylesheet" href="${href('assets/style.css')}"></head><body>${header(active, lang, variants)}${site.preview ? `<div class="preview-note"><span class="preview-dot" aria-hidden="true"></span>${ui.preview} <span class="preview-divider">·</span> ${ui.previewText}</div>` : ''}${content}${footer(lang)}<script src="${href('assets/search.js')}" defer></script></body></html>`;
   const target = path.join(out, actualRoute, 'index.html');
   await mkdir(path.dirname(target), { recursive: true });
   await writeFile(target, html);
-  if (route !== '404/') builtRoutes.push(actualRoute);
+  if (!noindex) builtRoutes.push({ route: actualRoute, ...(article && (article.modified || article.date) ? { modified: article.modified || article.date } : {}) });
 }
 
 const meta = a => {
   const ui = locales[a.lang];
   const detail = a.date ? `<time datetime="${escape(a.date)}">${escape(a.lang === 'ko' ? a.date.replaceAll('-', '.') : a.date)}</time>` : a.status === 'sample' ? `<span>${ui.sample}</span>` : '';
-  return `<div class="post-meta"><a href="${href(categoryRoute(a.category, a.lang))}">${escape(categoryName(a.category, a.lang))}</a>${detail ? `<span aria-hidden="true">·</span>${detail}` : ''}${a.author ? `<span aria-hidden="true">·</span><span>${escape(a.author)}</span>` : ''}</div>`;
+  return `<div class="post-meta"><a href="${href(categoryRoute(a.category, a.lang))}">${escape(categoryName(a.category, a.lang))}</a>${detail ? `<span aria-hidden="true">·</span>${detail}` : ''}${a.modified ? `<span aria-hidden="true">·</span><span>${a.lang === 'ko' ? '수정' : 'Updated'} <time datetime="${escape(a.modified)}">${escape(a.modified)}</time></span>` : ''}${a.author ? `<span aria-hidden="true">·</span><span>${escape(a.author)}</span>` : ''}</div>`;
 };
 const list = (entries, lang) => `<div class="post-list" data-search-list>${entries.map(a => `<article class="post-card" data-search-text="${escape(a.searchText)}"><a class="thumbnail" href="${href(articleRoute(a))}" tabindex="-1" aria-hidden="true"><img src="${href(a.cover)}" width="600" height="400" alt="" loading="lazy" decoding="async">${a.coverSample === 'true' ? `<span class="thumbnail-label">${lang === 'ko' ? 'AI 예시' : 'AI sample'}</span>` : ''}</a><div class="post-card-content">${meta(a)}<h2><a href="${href(articleRoute(a))}">${escape(a.title)}</a></h2><p>${escape(a.description)}</p></div></article>`).join('')}</div>`;
 const emptyState = lang => {
@@ -261,15 +278,15 @@ for (const lang of languages) {
     const variants = Object.fromEntries(languages.map(other => articleByTranslation.get(`${other}:${a.translationKey}`)).filter(Boolean).map(other => [other.lang, articleRoute(other)]));
     const missing = Object.keys(variants).length < languages.length ? `<aside class="translation-notice"><p>${ui.missingTranslation} <a href="${href(`${localizedRoute('articles/', lang === 'ko' ? 'en' : 'ko')}#translation-unavailable`)}">${ui.missingLink} <span aria-hidden="true">→</span></a></p></aside>` : '';
     const toc = a.toc.length ? `<details class="toc" open><summary>${ui.toc} <span aria-hidden="true">⌄</span></summary><ol>${a.toc.filter(x => x.level === 2).map(x => `<li><a href="#${x.id}">${escape(x.title)}</a></li>`).join('')}</ol></details>` : '';
-    await save(`articles/${a.slug}/`, a.title, a.description, `<main id="main" class="article-main">${breadcrumb([{label:ui.home,route:localizedRoute('', lang)},{label:categoryName(a.category, lang),route:categoryRoute(a.category, lang)}], lang)}<article><header class="article-header"><h1>${escape(a.title)}</h1>${meta(a)}</header>${missing}<div class="answer-summary"><span class="summary-label">${ui.summary}</span><p>${escape(a.summary)}</p></div>${readingSuggestions(a)}${toc}<div class="article-body">${a.html}</div></article></main>`, lang, a.category.slug, variants);
+    await save(`articles/${a.slug}/`, a.title, a.description, `<main id="main" class="article-main">${breadcrumb([{label:ui.home,route:localizedRoute('', lang)},{label:categoryName(a.category, lang),route:categoryRoute(a.category, lang)},{label:a.title}], lang, a.status === 'ready')}<article><header class="article-header"><h1>${escape(a.title)}</h1>${meta(a)}</header>${missing}<div class="answer-summary"><span class="summary-label">${ui.summary}</span><p>${escape(a.summary)}</p></div>${readingSuggestions(a)}${toc}<div class="article-body">${a.html}</div></article></main>`, lang, a.category.slug, variants);
   }
-  const infoPage = (title, body) => `<main id="main" class="article-main info-page">${breadcrumb([{label:ui.home,route:localizedRoute('', lang)},{label:title}], lang)}<h1>${escape(title)}</h1><div class="article-body">${body}</div></main>`;
+  const infoPage = (title, body, structured = true) => `<main id="main" class="article-main info-page">${breadcrumb([{label:ui.home,route:localizedRoute('', lang)},{label:title}], lang, structured)}<h1>${escape(title)}</h1><div class="article-body">${body}</div></main>`;
   for (const [route, info] of Object.entries(siteInfo({...site, brandImageHref:escape(href(site.brandImage))}, lang, escape))) {
     if (!info.body && !site.preview) throw new Error(`${info.title}: replace the preview placeholder before public launch.`);
     const body = info.body ? `${route === 'about' ? `<p>${escape(siteDescription(lang))}</p>` : ''}${info.body}` : `<div class="preparing"><span>${ui.preparing}</span><p>${escape(info.description)}</p></div><p>${ui.placeholder}</p>`;
     await save(`${route}/`, info.title, info.description, infoPage(info.title, body), lang);
   }
-  await save('404/', ui.notFound, ui.notFoundDescription, infoPage(ui.notFound, `<p>${ui.notFoundText}</p><p><a class="primary-link" href="${href(localizedRoute('articles/', lang))}">${ui.allLink} <span aria-hidden="true">→</span></a></p>`), lang);
+  await save('404/', ui.notFound, ui.notFoundDescription, infoPage(ui.notFound, `<p>${ui.notFoundText}</p><p><a class="primary-link" href="${href(localizedRoute('articles/', lang))}">${ui.allLink} <span aria-hidden="true">→</span></a></p>`, false), lang);
 }
 // GitHub Pages uses a single fallback file for every language. Keep its recovery links bilingual.
 const fallback404 = await readFile(path.join(out, '404/index.html'), 'utf8');
@@ -277,7 +294,7 @@ await writeFile(path.join(out, '404.html'), fallback404.replace(/<main[\s\S]*?<\
 await writeFile(path.join(out, '.nojekyll'), '');
 await writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\n${!site.preview && siteUrl ? `Sitemap: ${siteUrl}/sitemap.xml\n` : ''}`);
 if (!site.preview) {
-  await writeFile(path.join(out, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${builtRoutes.map(route => `<url><loc>${escape(`${siteUrl}/${route}`)}</loc></url>`).join('')}</urlset>`);
+  await writeFile(path.join(out, 'sitemap.xml'), sitemapXml(builtRoutes, siteUrl));
 }
 
 for (const target of ctaTargets) {
