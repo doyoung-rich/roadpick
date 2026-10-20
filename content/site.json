@@ -2,7 +2,7 @@
   "name": "로드픽",
   "temporaryName": false,
   "description": "일상에 필요한 정보를 한국어와 영어로 정리하는 로드픽입니다.",
-  "preview": true,
+  "preview": false,
   "basePath": "",
   "siteUrl": "https://roadpick.store",
   "recommendedArticles": [

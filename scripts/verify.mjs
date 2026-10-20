@@ -77,6 +77,15 @@ assert(robots.includes('Allow: /'), 'Crawling must remain available to read noin
 if (site.preview) {
   assert(!robots.includes('Sitemap:'), 'No preview sitemap advertisement.');
   assert(!(await readdir(path.join(root, 'dist'))).includes('sitemap.xml'), 'No noindex URLs in sitemap.');
+} else {
+  const sitemap = await read('dist/sitemap.xml');
+  assert(robots.includes(`Sitemap: ${origin}/sitemap.xml`), 'Advertise the live HTTPS sitemap.');
+  const locations = new Set([...sitemap.matchAll(/<loc>(.*?)<\/loc>/g)].map(([, url]) => unescape(url)));
+  for (const [route, html] of pages) {
+    const indexable = html.includes('name="robots" content="index,follow"');
+    assert.equal(locations.has(`${origin}${route}`), indexable, `${route}: sitemap matches indexing policy`);
+  }
+  for (const location of locations) assert(pages.has(new URL(location).pathname), `Existing sitemap page: ${location}`);
 }
 
 // Isolated fixtures exercise publication gates without changing source articles.
@@ -95,7 +104,13 @@ try {
     return result;
   };
   await writeFile(config, JSON.stringify(fixtureSite));
-  let result = build(); assert.notEqual(result.status, 0); assert(result.stderr.includes('Sample articles'));
+  let result = build(); assert.equal(result.status, 0, result.stderr);
+  const samplePage = await readFile(path.join(fixture, 'dist/articles/application-guide/index.html'), 'utf8');
+  assert(samplePage.includes('content="noindex,follow"'), 'Sample stays noindex after public launch.');
+  const publicHome = await readFile(path.join(fixture, 'dist/index.html'), 'utf8');
+  assert(!publicHome.includes('href="/articles/application-guide/"'), 'Public listings hide samples.');
+  const initialSitemap = await readFile(path.join(fixture, 'dist/sitemap.xml'), 'utf8');
+  assert(!initialSitemap.includes('/articles/application-guide/'), 'Sample excluded from public sitemap.');
   const samples = [];
   for (const language of ['', 'en']) {
     const directory = path.join(fixture, 'content/articles', language);

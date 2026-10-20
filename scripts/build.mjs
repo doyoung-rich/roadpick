@@ -162,7 +162,6 @@ for (const { file, lang, directory } of files) {
   if (metadata.status === 'draft') continue;
   if (!['ready', 'sample'].includes(metadata.status)) throw new Error(`${file}: status must be draft, sample or ready.`);
   if (metadata.lang && metadata.lang !== lang) throw new Error(`${file}: lang must match its directory (${lang}).`);
-  if (!site.preview && metadata.status === 'sample') throw new Error('Sample articles must be replaced before public indexing.');
   if (!metadata.title || !metadata.summary || !metadata.description) throw new Error(`${file}: title, summary and description are required.`);
   const category = categories.find(c => [c.name, c.menuLabel, c.enName, c.enMenuLabel, c.slug, ...(c.aliases || [])].includes(metadata.category));
   if (!category) throw new Error(`${file}: unknown category.`);
@@ -245,13 +244,15 @@ const footer = lang => {
 };
 
 const builtRoutes = [];
+const listedArticles = articles.filter(article => site.preview || article.status === 'ready');
 async function save(route, title, description, content, lang, active = '', articleVariants) {
   const ui = locales[lang];
   const actualRoute = localizedRoute(route, lang);
   const variants = articleVariants ?? Object.fromEntries(languages.map(other => [other, localizedRoute(route, other)]));
   const article = articles.find(a => a.lang === lang && route === `articles/${a.slug}/`);
-  const emptyCategory = route.startsWith('category/') && !articles.some(a => a.lang === lang && route === `category/${a.category.slug}/`);
-  const noindex = site.preview || route === '404/' || article?.status === 'sample' || emptyCategory;
+  const emptyCategory = route.startsWith('category/') && !listedArticles.some(a => a.lang === lang && route === `category/${a.category.slug}/`);
+  const emptyListing = (route === '' || route === 'articles/') && !listedArticles.some(a => a.lang === lang);
+  const noindex = site.preview || route === '404/' || article?.status === 'sample' || emptyCategory || emptyListing;
   const canonical = siteUrl && route !== '404/' ? `${siteUrl}/${actualRoute}` : '';
   const shareImage = article?.cover ? `${siteUrl}/${article.cover}` : `${siteUrl}/${site.brandImage}`;
   const shareAlt = article ? article.coverSample === 'true' ? lang === 'ko' ? 'AI가 만든 화면 구성용 예시 이미지' : 'AI-generated layout illustration' : article.title : 'ROAD-PEAK — DRIVE THE PEAK';
@@ -279,7 +280,7 @@ const emptyState = lang => {
 };
 
 for (const lang of languages) {
-  const ui = locales[lang], entries = articles.filter(article => article.lang === lang);
+  const ui = locales[lang], entries = listedArticles.filter(article => article.lang === lang);
   const searchStatus = `<p class="search-status" data-search-status role="status" aria-live="polite">${ui.count(entries.length)}</p>`;
   const searchEmpty = `<div class="search-empty" data-search-empty hidden><h2>${ui.searchEmpty}</h2><p>${ui.searchHint}</p><button type="button" data-search-clear>${ui.allLink}</button></div><noscript><p class="search-fallback">${ui.noScript}</p></noscript>`;
   const fallback = `<aside class="translation-notice translation-fallback" id="translation-unavailable"><strong>${ui.fallbackTitle}</strong><p>${ui.fallback}</p></aside>`;
@@ -290,7 +291,7 @@ for (const lang of languages) {
     const matches = entries.filter(a => a.category.slug === group.slug), name = categoryName(group, lang);
     await save(`category/${group.slug}/`, name, ui.categoryDescription(name), `<main id="main" class="listing-main">${breadcrumb([{label:ui.home,route:localizedRoute('', lang)},{label:name}], lang)}<div class="listing-heading"><h1>${escape(name)}</h1><span class="post-count">${ui.count(matches.length)}</span></div>${matches.length ? list(matches, lang) : emptyState(lang)}</main>`, lang, group.slug);
   }
-  for (const a of entries) {
+  for (const a of articles.filter(article => article.lang === lang)) {
     const variants = Object.fromEntries(languages.map(other => articleByTranslation.get(`${other}:${a.translationKey}`)).filter(Boolean).map(other => [other.lang, articleRoute(other)]));
     const missing = Object.keys(variants).length < languages.length ? `<aside class="translation-notice"><p>${ui.missingTranslation} <a href="${href(`${localizedRoute('articles/', lang === 'ko' ? 'en' : 'ko')}#translation-unavailable`)}">${ui.missingLink} <span aria-hidden="true">→</span></a></p></aside>` : '';
     const toc = a.toc.length ? `<details class="toc" open><summary>${ui.toc} <span aria-hidden="true">⌄</span></summary><ol>${a.toc.filter(x => x.level === 2).map(x => `<li><a href="#${x.id}">${escape(x.title)}</a></li>`).join('')}</ol></details>` : '';
