@@ -218,7 +218,7 @@ function readingSuggestions(article) {
   const keywords = new Set(article.keywords);
   const related = sameLanguage.filter(candidate => candidate.slug !== article.slug && !reserved.has(candidate.slug)).map(candidate => {
     const sharedKeywords = candidate.keywords.filter(word => keywords.has(word)).length;
-    const sameCategory = candidate.category.slug === article.category.slug && candidate.category.group.slug === article.category.group.slug;
+    const sameCategory = candidate.category.slug === article.category.slug;
     return { article: candidate, sharedKeywords, sameCategory };
   }).filter(candidate => candidate.sharedKeywords > 0 || candidate.sameCategory)
     .sort((a, b) => b.sharedKeywords - a.sharedKeywords || Number(b.sameCategory) - Number(a.sameCategory) || (b.article.date || '').localeCompare(a.article.date || '') || a.article.slug.localeCompare(b.article.slug))
