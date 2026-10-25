@@ -1,6 +1,11 @@
-export const languages = ['ko', 'en'];
+import { japanese, vietnamese } from './asian-locales.mjs';
+import { chinese } from './chinese.mjs';
+export const languages = ['ko', 'en', 'zh-Hans', 'ja', 'vi'];
 
 export const locales = {
+  ja: japanese,
+  vi: vietnamese,
+  'zh-Hans': chinese,
   ko: {
     home: '홈', temporary: '가칭', skip: '본문으로 바로가기', menu: '주 메뉴',
     language: '언어 선택', searchLabel: '사이트 글 검색', searchPlaceholder: '찾고 싶은 내용을 검색하세요', search: '검색',
@@ -16,7 +21,7 @@ export const locales = {
     summary: '먼저 확인하세요', toc: '이 글의 목차', discovery: '다른 글도 읽어보세요',
     discoveryText: '관심 있는 내용을 골라 이어서 확인해보세요.', related: '같은 주제의 글', recommended: '추천 글',
     discoverMore: '더 많은 글 찾기', categoryMore: name => `${name} 글 더보기`,
-    missingTranslation: '이 글의 영어판은 아직 준비 중입니다.', missingLink: '영어 글 목록 보기',
+    missingTranslation: '다른 언어판은 원고가 준비되면 발행합니다.', missingLink: '글 목록 보기',
     fallback: '요청한 글의 한국어판은 아직 준비 중입니다. 다른 한국어 글을 확인해보세요.',
     fallbackTitle: '아직 번역되지 않은 글입니다', preparing: '준비 중',
     notFound: '페이지를 찾을 수 없습니다', notFoundDescription: '글 목록에서 필요한 정보를 다시 찾아보세요.',
@@ -45,7 +50,7 @@ export const locales = {
     summary: 'Start here', toc: 'In this article', discovery: 'Keep reading',
     discoveryText: 'Choose another article to explore.', related: 'Related articles', recommended: 'Recommended articles',
     discoverMore: 'Find more articles', categoryMore: name => `More in ${name}`,
-    missingTranslation: 'A Korean version of this article is not available yet.', missingLink: 'Browse Korean articles',
+    missingTranslation: 'Other language versions will be added when their manuscripts are ready.', missingLink: 'Browse articles',
     fallback: 'An English version of the requested article is not available yet. Browse other English articles below.',
     fallbackTitle: 'Translation not available yet', preparing: 'In preparation',
     notFound: 'Page not found', notFoundDescription: 'Browse the article list to find what you need.',

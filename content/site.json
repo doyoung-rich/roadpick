@@ -1,7 +1,7 @@
 {
   "name": "로드픽",
   "temporaryName": false,
-  "description": "일상에 필요한 정보를 한국어와 영어로 정리하는 로드픽입니다.",
+  "description": "일상과 한국 여행 정보를 한국어·중국어 간체자·일본어·베트남어로 정리하는 로드픽입니다.",
   "preview": false,
   "basePath": "",
   "siteUrl": "https://roadpick.store",
@@ -30,7 +30,13 @@
         "원예·재배"
       ],
       "enName": "Everyday life",
-      "enMenuLabel": "Living"
+      "enMenuLabel": "Living",
+      "zhName": "生活信息",
+      "zhMenuLabel": "生活",
+      "jaName": "暮らし",
+      "viName": "Đời sống",
+      "jaMenuLabel": "暮らし",
+      "viMenuLabel": "Đời sống"
     },
     {
       "name": "금융·보험",
@@ -43,7 +49,13 @@
         "경제"
       ],
       "enName": "Finance & insurance",
-      "enMenuLabel": "Finance"
+      "enMenuLabel": "Finance",
+      "zhName": "金融与保险",
+      "zhMenuLabel": "金融",
+      "jaName": "金融・保険",
+      "viName": "Tài chính và bảo hiểm",
+      "jaMenuLabel": "金融",
+      "viMenuLabel": "Tài chính"
     },
     {
       "name": "문화·공연",
@@ -63,7 +75,13 @@
         "방송"
       ],
       "enName": "Culture & events",
-      "enMenuLabel": "Culture"
+      "enMenuLabel": "Culture",
+      "zhName": "文化与演出",
+      "zhMenuLabel": "文化",
+      "jaName": "文化・イベント",
+      "viName": "Văn hóa và sự kiện",
+      "jaMenuLabel": "文化",
+      "viMenuLabel": "Văn hóa"
     },
     {
       "name": "여행·맛집",
@@ -76,7 +94,13 @@
         "맛집"
       ],
       "enName": "Travel & food",
-      "enMenuLabel": "Travel"
+      "enMenuLabel": "Travel",
+      "zhName": "旅行与美食",
+      "zhMenuLabel": "旅行",
+      "jaName": "旅行・グルメ",
+      "viName": "Du lịch và ẩm thực",
+      "jaMenuLabel": "旅行",
+      "viMenuLabel": "Du lịch"
     },
     {
       "name": "스포츠·취미",
@@ -91,7 +115,13 @@
         "취미"
       ],
       "enName": "Sports & hobbies",
-      "enMenuLabel": "Sports"
+      "enMenuLabel": "Sports",
+      "zhName": "运动与爱好",
+      "zhMenuLabel": "运动",
+      "jaName": "スポーツ・趣味",
+      "viName": "Thể thao và sở thích",
+      "jaMenuLabel": "スポーツ",
+      "viMenuLabel": "Thể thao"
     },
     {
       "name": "지식·정보",
@@ -108,12 +138,24 @@
         "교육·학문"
       ],
       "enName": "Knowledge & technology",
-      "enMenuLabel": "Insights"
+      "enMenuLabel": "Insights",
+      "zhName": "知识与资讯",
+      "zhMenuLabel": "资讯",
+      "jaName": "知識・情報",
+      "viName": "Kiến thức và thông tin",
+      "jaMenuLabel": "情報",
+      "viMenuLabel": "Thông tin"
     }
   ],
   "enName": "ROAD-PEAK",
-  "enDescription": "ROAD-PEAK brings practical information together in Korean and English.",
+  "enDescription": "ROAD-PEAK offers practical information in Korean, Simplified Chinese, Japanese and Vietnamese. Previously published English guides remain available.",
   "brandImage": "assets/brand/roadpeak.webp",
   "contactEmail": "godwd25@gmail.com",
-  "operatorName": "로드픽"
+  "operatorName": "로드픽",
+  "zhDescription": "ROAD-PEAK 提供韩语、简体中文、日语和越南语的实用信息与韩国旅行指南。",
+  "zhName": "ROAD-PEAK 中文",
+  "jaName": "ROAD-PEAK 日本語",
+  "viName": "ROAD-PEAK Tiếng Việt",
+  "jaDescription": "韓国旅行と暮らしに役立つ情報を、韓国語・中国語簡体字・日本語・ベトナム語でお届けします。",
+  "viDescription": "ROAD-PEAK cung cấp thông tin hữu ích và hướng dẫn du lịch Hàn Quốc bằng tiếng Hàn, Trung giản thể, Nhật và Việt."
 }

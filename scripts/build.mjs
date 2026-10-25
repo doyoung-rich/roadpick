@@ -25,17 +25,21 @@ if (!/^[^\s<>"'@]+@[^\s<>"'@]+\.[^\s<>"'@]+$/.test(site.contactEmail || '') || !
 if (!/^assets\/brand\/[a-zA-Z0-9_-]+\.webp$/.test(site.brandImage || '')) throw new Error('A local brand image is required.');
 await lstat(path.join(root, site.brandImage));
 const href = route => `${base}/${route}`;
-const localizedRoute = (route, lang = 'ko') => `${lang === 'en' ? 'en/' : ''}${route}`;
+const menuLanguages = ['ko', 'zh-Hans', 'ja', 'vi'];
+const languageDirectory = lang => ({ ko: '', en: 'en', 'zh-Hans': 'zh', ja: 'ja', vi: 'vi' })[lang];
+const languageLabel = lang => ({ ko: '한국어', en: 'English', 'zh-Hans': '简体中文', ja: '日本語', vi: 'Tiếng Việt' })[lang];
+const shareLanguage = lang => ({ ko: 'ko_KR', en: 'en_US', 'zh-Hans': 'zh_CN', ja: 'ja_JP', vi: 'vi_VN' })[lang];
+const localizedRoute = (route, lang = 'ko') => `${languageDirectory(lang) ? languageDirectory(lang) + '/' : ''}${route}`;
 const groupRoute = (group, lang = 'ko') => localizedRoute(`category/${group.slug}/`, lang);
 const categoryRoute = groupRoute;
 const articleRoute = article => localizedRoute(`articles/${article.slug}/`, article.lang);
-const siteName = lang => lang === 'en' ? site.enName : site.name;
-const siteDescription = lang => lang === 'en' ? site.enDescription : site.description;
-const categoryName = (category, lang) => lang === 'en' ? category.enName : category.name;
-const categoryLabel = (category, lang) => lang === 'en' ? category.enMenuLabel : category.menuLabel;
-if (!site.enName || !site.enDescription) throw new Error('English site name and description are required.');
+const siteName = lang => lang === 'ko' ? site.name : ({ 'zh-Hans': site.zhName, ja: site.jaName, vi: site.viName })[lang] || site.enName;
+const siteDescription = lang => ({ ko: site.description, en: site.enDescription, 'zh-Hans': site.zhDescription, ja: site.jaDescription, vi: site.viDescription })[lang];
+const categoryName = (category, lang) => ({ ko: category.name, en: category.enName, 'zh-Hans': category.zhName, ja: category.jaName, vi: category.viName })[lang];
+const categoryLabel = (category, lang) => ({ ko: category.menuLabel, en: category.enMenuLabel, 'zh-Hans': category.zhMenuLabel, ja: category.jaMenuLabel, vi: category.viMenuLabel })[lang];
+if (!site.enName || !site.enDescription || !site.zhDescription) throw new Error('English site name and description are required.');
 const categories = site.categories.map(group => {
-  if (!/^[a-z0-9-]+$/.test(group.slug) || !/^[a-z0-9-]+\.svg$/.test(group.image) || !group.name || !group.menuLabel || !group.enName || !group.enMenuLabel) throw new Error('Invalid category.');
+  if (!/^[a-z0-9-]+$/.test(group.slug) || !/^[a-z0-9-]+\.svg$/.test(group.image) || !group.name || !group.menuLabel || !group.enName || !group.enMenuLabel || !group.zhName || !group.zhMenuLabel) throw new Error('Invalid category.');
   return { ...group, group };
 });
 if (new Set(categories.map(c => c.name)).size !== categories.length || new Set(categories.map(c => c.slug)).size !== categories.length) throw new Error('Category names and slugs must be unique.');
@@ -157,8 +161,8 @@ async function renderMarkdown(markdown, lang) {
 
 const files = [];
 for (const lang of languages) {
-  const directory = path.join(root, 'content/articles', lang === 'en' ? 'en' : '');
-  const names = await readdir(directory).catch(error => { if (error.code === 'ENOENT' && lang === 'en') return []; throw error; });
+  const directory = path.join(root, 'content/articles', languageDirectory(lang));
+  const names = await readdir(directory).catch(error => { if (error.code === 'ENOENT' && lang !== 'ko') return []; throw error; });
   files.push(...names.filter(file => file.endsWith('.md')).sort().map(file => ({ file, lang, directory })));
 }
 const articles = [];
@@ -240,9 +244,9 @@ await cp(path.join(root, 'assets'), path.join(out, 'assets'), { recursive: true 
 function header(active, lang, variants) {
   const ui = locales[lang];
   const nav = site.categories.map(c => `<a href="${href(groupRoute(c, lang))}"${active === c.slug ? ' class="active-group" aria-current="true"' : ''}>${escape(categoryLabel(c, lang))}</a>`).join('');
-  const switches = languages.map(other => other === lang
-    ? `<span lang="${other}" aria-current="true">${other === 'ko' ? '한국어' : 'English'}</span>`
-    : `<a lang="${other}" hreflang="${other}" href="${href(variants[other] ?? `${localizedRoute('articles/', other)}#translation-unavailable`)}">${other === 'ko' ? '한국어' : 'English'}</a>`).join('<span class="language-divider" aria-hidden="true">/</span>');
+  const switches = menuLanguages.map(other => other === lang
+    ? `<span lang="${other}" aria-current="true">${languageLabel(other)}</span>`
+    : `<a lang="${other}" hreflang="${other}" href="${href(variants[other] ?? `${localizedRoute('articles/', other)}#translation-unavailable`)}">${languageLabel(other)}</a>`).join('<span class="language-divider" aria-hidden="true">/</span>');
   return `<a class="skip-link" href="#main">${ui.skip}</a>
   <header class="site-header simple-header"><div class="header-inner">
     <div class="brand-row"><a class="brand" href="${href(localizedRoute('', lang))}" aria-label="${escape(siteName(lang))} ${ui.home}"><span class="brand-symbol" aria-hidden="true"><img src="${href(site.brandImage)}" width="1024" height="1024" alt=""></span><span>${escape(siteName(lang))}</span>${site.temporaryName ? `<span class="temporary-name">${ui.temporary}</span>` : ''}</a></div>
@@ -268,8 +272,8 @@ async function save(route, title, description, content, lang, active = '', artic
   const canonical = siteUrl && route !== '404/' ? `${siteUrl}/${actualRoute}` : '';
   const shareImage = article?.cover ? `${siteUrl}/${article.cover}` : `${siteUrl}/${site.brandImage}`;
   const shareAlt = article ? article.coverSample === 'true' ? lang === 'ko' ? 'AI가 만든 화면 구성용 예시 이미지' : 'AI-generated layout illustration' : article.title : 'ROAD-PEAK — DRIVE THE PEAK';
-  const shareLocale = lang === 'ko' ? 'ko_KR' : 'en_US';
-  const sharing = canonical ? `<meta property="og:type" content="${article?.status === 'ready' ? 'article' : 'website'}"><meta property="og:site_name" content="${escape(siteName(lang))}"><meta property="og:title" content="${escape(title)}"><meta property="og:description" content="${escape(description)}"><meta property="og:url" content="${escape(canonical)}"><meta property="og:locale" content="${shareLocale}">${Object.keys(variants).filter(other => other !== lang).map(other => `<meta property="og:locale:alternate" content="${other === 'ko' ? 'ko_KR' : 'en_US'}">`).join('')}<meta property="og:image" content="${escape(shareImage)}"><meta property="og:image:alt" content="${escape(shareAlt)}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="${escape(title)}"><meta name="twitter:description" content="${escape(description)}"><meta name="twitter:image" content="${escape(shareImage)}"><meta name="twitter:image:alt" content="${escape(shareAlt)}">` : '';
+  const shareLocale = shareLanguage(lang);
+  const sharing = canonical ? `<meta property="og:type" content="${article?.status === 'ready' ? 'article' : 'website'}"><meta property="og:site_name" content="${escape(siteName(lang))}"><meta property="og:title" content="${escape(title)}"><meta property="og:description" content="${escape(description)}"><meta property="og:url" content="${escape(canonical)}"><meta property="og:locale" content="${shareLocale}">${Object.keys(variants).filter(other => other !== lang).map(other => `<meta property="og:locale:alternate" content="${shareLanguage(other)}">`).join('')}<meta property="og:image" content="${escape(shareImage)}"><meta property="og:image:alt" content="${escape(shareAlt)}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="${escape(title)}"><meta name="twitter:description" content="${escape(description)}"><meta name="twitter:image" content="${escape(shareImage)}"><meta name="twitter:image:alt" content="${escape(shareAlt)}">` : '';
   const alternates = canonical && Object.keys(variants).length > 1 ? Object.entries(variants).map(([other, otherRoute]) => `<link rel="alternate" hreflang="${other}" href="${escape(`${siteUrl}/${otherRoute}`)}">`).join('') : '';
   const schema = pageMetadata({ site: { ...site, siteUrl }, lang, route, canonical, title, description, article, emptyCategory });
   const ownershipTag = lang === 'ko' && route === '' && site.naverSiteVerification
@@ -285,9 +289,9 @@ async function save(route, title, description, content, lang, active = '', artic
 const meta = a => {
   const ui = locales[a.lang];
   const detail = a.date ? `<time datetime="${escape(a.date)}">${escape(a.lang === 'ko' ? a.date.replaceAll('-', '.') : a.date)}</time>` : a.status === 'sample' ? `<span>${ui.sample}</span>` : '';
-  return `<div class="post-meta"><a href="${href(categoryRoute(a.category, a.lang))}">${escape(categoryName(a.category, a.lang))}</a>${detail ? `<span aria-hidden="true">·</span>${detail}` : ''}${a.modified ? `<span aria-hidden="true">·</span><span>${a.lang === 'ko' ? '수정' : 'Updated'} <time datetime="${escape(a.modified)}">${escape(a.modified)}</time></span>` : ''}${a.author ? `<span aria-hidden="true">·</span><span>${escape(a.author)}</span>` : ''}</div>`;
+  return `<div class="post-meta"><a href="${href(categoryRoute(a.category, a.lang))}">${escape(categoryName(a.category, a.lang))}</a>${detail ? `<span aria-hidden="true">·</span>${detail}` : ''}${a.modified ? `<span aria-hidden="true">·</span><span>${a.lang === 'ko' ? '수정' : a.lang === 'zh-Hans' ? '更新' : lang === 'ja' ? '更新' : lang === 'vi' ? 'Cập nhật' : 'Updated'} <time datetime="${escape(a.modified)}">${escape(a.modified)}</time></span>` : ''}${a.author ? `<span aria-hidden="true">·</span><span>${escape(a.author)}</span>` : ''}</div>`;
 };
-const list = (entries, lang) => `<div class="post-list" data-search-list>${entries.map(a => `<article class="post-card" data-search-text="${escape(a.searchText)}"><a class="thumbnail" href="${href(articleRoute(a))}" tabindex="-1" aria-hidden="true"><img src="${href(a.cover)}" width="600" height="400" alt="" loading="lazy" decoding="async">${a.coverSample === 'true' ? `<span class="thumbnail-label">${lang === 'ko' ? 'AI 예시' : 'AI sample'}</span>` : ''}</a><div class="post-card-content">${meta(a)}<h2><a href="${href(articleRoute(a))}">${escape(a.title)}</a></h2><p>${escape(a.description)}</p></div></article>`).join('')}</div>`;
+const list = (entries, lang) => `<div class="post-list" data-search-list>${entries.map(a => `<article class="post-card" data-search-text="${escape(a.searchText)}"><a class="thumbnail" href="${href(articleRoute(a))}" tabindex="-1" aria-hidden="true"><img src="${href(a.cover)}" width="600" height="400" alt="" loading="lazy" decoding="async">${a.coverSample === 'true' ? `<span class="thumbnail-label">${lang === 'ko' ? 'AI 예시' : lang === 'zh-Hans' ? 'AI 示例' : lang === 'ja' ? 'AIサンプル' : lang === 'vi' ? 'Ảnh AI mẫu' : 'AI sample'}</span>` : ''}</a><div class="post-card-content">${meta(a)}<h2><a href="${href(articleRoute(a))}">${escape(a.title)}</a></h2><p>${escape(a.description)}</p></div></article>`).join('')}</div>`;
 const emptyState = lang => {
   const ui = locales[lang];
   return `<div class="empty-state"><span class="empty-mark" aria-hidden="true">＋</span><h2>${ui.preparingTitle}</h2><p>${ui.preparingText}</p><div><a href="${href(localizedRoute('articles/', lang))}">${ui.allLink} <span aria-hidden="true">→</span></a></div></div>`;
@@ -298,7 +302,7 @@ for (const lang of languages) {
   const searchStatus = `<p class="search-status" data-search-status role="status" aria-live="polite">${ui.count(entries.length)}</p>`;
   const searchEmpty = `<div class="search-empty" data-search-empty hidden><h2>${ui.searchEmpty}</h2><p>${ui.searchHint}</p><button type="button" data-search-clear>${ui.allLink}</button></div><noscript><p class="search-fallback">${ui.noScript}</p></noscript>`;
   const fallback = `<aside class="translation-notice translation-fallback" id="translation-unavailable"><strong>${ui.fallbackTitle}</strong><p>${ui.fallback}</p></aside>`;
-  const intro = `<section class="site-intro" aria-label="${ui.info.about.title}"><div><p class="intro-eyebrow">${lang === 'ko' ? '필요한 정보를, 고르기 쉽게' : 'Practical answers, easier choices'}</p><h1>${escape(siteName(lang))}</h1><p>${escape(siteDescription(lang))}</p></div><img src="${href(site.brandImage)}" width="1024" height="1024" alt="ROAD-PEAK — DRIVE THE PEAK" decoding="async"></section>`;
+  const intro = `<section class="site-intro" aria-label="${ui.info.about.title}"><div><p class="intro-eyebrow">${lang === 'ko' ? '필요한 정보를, 고르기 쉽게' : lang === 'zh-Hans' ? '实用信息，轻松选择' : lang === 'ja' ? '必要な情報を、選びやすく' : lang === 'vi' ? 'Thông tin hữu ích, lựa chọn dễ dàng' : 'Practical answers, easier choices'}</p><h1>${escape(siteName(lang))}</h1><p>${escape(siteDescription(lang))}</p></div><img src="${href(site.brandImage)}" width="1024" height="1024" alt="ROAD-PEAK — DRIVE THE PEAK" decoding="async"></section>`;
   await save('', siteName(lang), siteDescription(lang), `<main id="main" class="listing-main home-main" data-search-page>${intro}<div class="listing-heading"><h2 data-search-title>${ui.latest}</h2>${searchStatus}</div>${list(entries, lang)}${!entries.length ? emptyState(lang) : ''}${searchEmpty}<a class="browse-all" href="${href(localizedRoute('articles/', lang))}">${ui.allLink} <span aria-hidden="true">→</span></a></main>`, lang, 'home');
   await save('articles/', ui.all, ui.allDescription, `<main id="main" class="listing-main" data-search-page>${breadcrumb([{label:ui.home,route:localizedRoute('', lang)},{label:ui.all}], lang)}${fallback}<div class="listing-heading"><h1 data-search-title>${ui.all}</h1>${searchStatus}</div>${list(entries, lang)}${!entries.length ? emptyState(lang) : ''}${searchEmpty}</main>`, lang, 'all');
   for (const group of site.categories) {
@@ -307,7 +311,7 @@ for (const lang of languages) {
   }
   for (const a of articles.filter(article => article.lang === lang)) {
     const variants = Object.fromEntries(languages.map(other => articleByTranslation.get(`${other}:${a.translationKey}`)).filter(Boolean).map(other => [other.lang, articleRoute(other)]));
-    const missing = Object.keys(variants).length < languages.length ? `<aside class="translation-notice"><p>${ui.missingTranslation} <a href="${href(`${localizedRoute('articles/', lang === 'ko' ? 'en' : 'ko')}#translation-unavailable`)}">${ui.missingLink} <span aria-hidden="true">→</span></a></p></aside>` : '';
+    const missing = Object.keys(variants).length === 1 ? `<aside class="translation-notice"><p>${ui.missingTranslation} <a href="${href(`${localizedRoute('articles/', lang)}#translation-unavailable`)}">${ui.missingLink} <span aria-hidden="true">→</span></a></p></aside>` : '';
     const toc = a.toc.length ? `<details class="toc" open><summary>${ui.toc} <span aria-hidden="true">⌄</span></summary><ol>${a.toc.filter(x => x.level === 2).map(x => `<li><a href="#${x.id}">${escape(x.title)}</a></li>`).join('')}</ol></details>` : '';
     await save(`articles/${a.slug}/`, a.title, a.description, `<main id="main" class="article-main">${breadcrumb([{label:ui.home,route:localizedRoute('', lang)},{label:categoryName(a.category, lang),route:categoryRoute(a.category, lang)},{label:a.title}], lang, a.status === 'ready')}<article><header class="article-header"><h1>${escape(a.title)}</h1>${meta(a)}</header>${missing}<div class="answer-summary"><span class="summary-label">${ui.summary}</span><p>${escape(a.summary)}</p></div>${readingSuggestions(a)}${toc}<div class="article-body">${a.html}</div></article></main>`, lang, a.category.slug, variants);
   }
@@ -319,9 +323,9 @@ for (const lang of languages) {
   }
   await save('404/', ui.notFound, ui.notFoundDescription, infoPage(ui.notFound, `<p>${ui.notFoundText}</p><p><a class="primary-link" href="${href(localizedRoute('articles/', lang))}">${ui.allLink} <span aria-hidden="true">→</span></a></p>`, false), lang);
 }
-// GitHub Pages uses a single fallback file for every language. Keep its recovery links bilingual.
+// GitHub Pages uses a single fallback file for every language. Keep its recovery links available in every language.
 const fallback404 = await readFile(path.join(out, '404/index.html'), 'utf8');
-await writeFile(path.join(out, '404.html'), fallback404.replace(/<main[\s\S]*?<\/main>/, `<main id="main" class="article-main info-page"><h1>페이지를 찾을 수 없습니다<br><span lang="en">Page not found</span></h1><div class="article-body"><p>${locales.ko.notFoundText}</p><p lang="en">${locales.en.notFoundText}</p><p><a class="primary-link" href="${href('articles/')}">한국어 글 목록</a></p><p lang="en"><a class="primary-link" href="${href('en/articles/')}">Browse English articles</a></p></div></main>`));
+await writeFile(path.join(out, '404.html'), fallback404.replace(/<main[\s\S]*?<\/main>/, `<main id="main" class="article-main info-page"><h1>페이지를 찾을 수 없습니다<br><span lang="en">Page not found</span><br><span lang="zh-Hans">找不到页面</span><br><span lang="ja">ページが見つかりません</span><br><span lang="vi">Không tìm thấy trang</span></h1><div class="article-body"><p>${locales.ko.notFoundText}</p><p lang="en">${locales.en.notFoundText}</p><p><a class="primary-link" href="${href('articles/')}">한국어 글 목록</a></p><p lang="en"><a class="primary-link" href="${href('en/articles/')}">Browse English articles</a></p><p lang="zh-Hans"><a class="primary-link" href="${href('zh/articles/')}">浏览中文文章</a></p><p lang="ja"><a class="primary-link" href="${href('ja/articles/')}">日本語の記事一覧</a></p><p lang="vi"><a class="primary-link" href="${href('vi/articles/')}">Bài viết tiếng Việt</a></p></div></main>`));
 await writeFile(path.join(out, '.nojekyll'), '');
 await writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\n${!site.preview && siteUrl ? `Sitemap: ${siteUrl}/sitemap.xml\n` : ''}`);
 if (!site.preview) {

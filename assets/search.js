@@ -4,6 +4,9 @@
     .filter(field => field.input);
   const page = document.querySelector('[data-search-page]');
   const list = page?.querySelector('[data-search-list]');
+  const isJapanese = document.documentElement.lang === 'ja';
+  const isVietnamese = document.documentElement.lang === 'vi';
+  const isChinese = /^zh(?:-|$)/i.test(document.documentElement.lang);
   const isEnglish = /^en(?:-|$)/i.test(document.documentElement.lang);
   const readQuery = () => (new URL(location.href).searchParams.get('q') || '').slice(0, 120);
   const normalize = text => String(text).normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -33,7 +36,13 @@
       if (matches) count++;
     }
     syncFields(query, source);
-    for (const status of statuses) status.textContent = isEnglish
+    for (const status of statuses) status.textContent = isJapanese
+      ? terms.length ? `「${query.trim()}」の検索結果：${count}件` : `${count}件の記事`
+      : isVietnamese
+      ? terms.length ? `${count} kết quả cho “${query.trim()}”` : `${count} bài viết`
+      : isChinese
+      ? terms.length ? `“${query.trim()}” 的搜索结果：${count} 篇` : `${count} 篇文章`
+      : isEnglish
       ? terms.length
         ? `${count} ${count === 1 ? 'result' : 'results'} for “${query.trim()}”`
         : `${count} ${count === 1 ? 'article' : 'articles'}`
@@ -41,7 +50,7 @@
         ? `“${query.trim()}” 검색 결과 ${count}개`
         : `${count}개의 글`;
     for (const empty of emptyStates) empty.hidden = !terms.length || count > 0;
-    for (const { element, original } of titles) element.textContent = terms.length ? (isEnglish ? 'Search results' : '검색 결과') : original;
+    for (const { element, original } of titles) element.textContent = terms.length ? (isJapanese ? '検索結果' : isVietnamese ? 'Kết quả tìm kiếm' : isChinese ? '搜索结果' : isEnglish ? 'Search results' : '검색 결과') : original;
 
     if (updateUrl) {
       const url = new URL(location.href);

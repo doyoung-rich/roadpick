@@ -7,7 +7,7 @@ export function pageMetadata({ site, lang, route, canonical, title, description,
   const nodes = [];
   if (!route && lang === 'ko') nodes.push({
     '@type': 'WebSite', '@id': `${root}#website`, url: root,
-    name: site.name, alternateName: site.enName, inLanguage: ['ko', 'en']
+    name: site.name, alternateName: site.enName, inLanguage: ['ko', 'zh-Hans', 'ja', 'vi']
   });
   const page = {
     '@type': article ? 'BlogPosting' : route === 'about/' ? 'AboutPage' : route === 'contact/' ? 'ContactPage' : route === 'articles/' || route.startsWith('category/') ? 'CollectionPage' : 'WebPage',
@@ -17,7 +17,7 @@ export function pageMetadata({ site, lang, route, canonical, title, description,
   if (article) {
     page.headline = article.title;
     page.mainEntityOfPage = canonical;
-    page.articleSection = lang === 'ko' ? article.category.name : article.category.enName;
+    page.articleSection = ({ ko: article.category.name, en: article.category.enName, 'zh-Hans': article.category.zhName, ja: article.category.jaName, vi: article.category.viName })[lang];
     if (article.date) page.datePublished = article.date;
     if (article.modified) page.dateModified = article.modified;
     if (article.author) page.author = { '@type': 'Person', name: article.author };

@@ -88,6 +88,8 @@ if (site.preview) {
   for (const location of locations) assert(pages.has(new URL(location).pathname), `Existing sitemap page: ${location}`);
 }
 
+// --static-only checks generated output without spawning fixture builds.
+if (!process.argv.includes('--static-only')) {
 // Isolated fixtures exercise publication gates without changing source articles.
 const tempRoot = path.resolve(os.tmpdir());
 const fixture = await mkdtemp(path.join(tempRoot, 'roadpick-verify-'));
@@ -140,4 +142,5 @@ try {
   assert(path.basename(fixture).startsWith('roadpick-verify-'));
   await rm(fixture, { recursive: true, force: true });
 }
-console.log(`PASS: ${pages.size} generated pages; metadata, schema, links, languages, preview and publication gates.`);
+}
+console.log(`PASS: ${pages.size} generated pages; metadata, schema, links, languages, preview and publication gates${process.argv.includes('--static-only') ? ' (generated output only; isolated fixtures skipped)' : ''}.`);
