@@ -35,3 +35,6 @@
 /* Preserve the supplied portrait cover without cropping its headline. */
 .post-card .thumbnail img[src$="kim-jong-un-cover-20261026.jpg"]{object-fit:contain;background:#000}
 .article-figure img[src$="kim-jong-un-cover-20261026.jpg"]{max-height:720px;object-fit:contain;background:#000}
+
+.post-card .thumbnail img[src$="autumn-foliage-cover-2026.jpg"]{object-fit:contain;background:#000}
+.article-figure img[src$="autumn-foliage-cover-2026.jpg"]{max-height:720px;object-fit:contain;background:#000}
