@@ -130,7 +130,19 @@ try {
   await writeFile(subject, clean.replace('status: ready', 'status: ready\ndate: 2026-02-30'));
   result = build(); assert.notEqual(result.status, 0); assert(result.stderr.includes('real YYYY-MM-DD'));
   await writeFile(subject, clean.replace('status: ready', 'status: ready\ndate: 2026-10-18\nmodified: 2026-10-19\nauthor: Verification fixture'));
+  // Exercise modified labels for languages other than Korean and Chinese.
+  for (const language of ['ja', 'vi']) {
+    const translated = path.join(fixture, 'content/articles', language, 'korea-entry-requirements-2026.md');
+    const source = await readFile(translated, 'utf8');
+    assert(source.includes('date: 2026-10-26'));
+    await writeFile(translated, source.replace('date: 2026-10-26', 'date: 2026-10-26\nmodified: 2026-10-27'));
+  }
   execFileSync(process.execPath, ['scripts/build.mjs'], { cwd: fixture, env, stdio: 'pipe' });
+  for (const [language, label] of [['ja', '更新'], ['vi', 'Cập nhật']]) {
+    const translated = await readFile(path.join(fixture, 'dist', language, 'articles/korea-entry-requirements-2026/index.html'), 'utf8');
+    assert(translated.includes(`${label} <time datetime="2026-10-27">2026-10-27</time>`), `${language}: localized modified label`);
+    assert(translated.includes('"dateModified":"2026-10-27"'), `${language}: matching modified schema`);
+  }
   const page = await readFile(path.join(fixture, 'dist/articles/application-guide/index.html'), 'utf8');
   const graphs = [...page.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].flatMap(([, json]) => { const data = JSON.parse(json); return data['@graph'] || [data]; });
   const article = graphs.find(node => node['@type'] === 'BlogPosting');

@@ -1,4 +1,4 @@
-name: Deploy GitHub Pages preview
+name: Verify and deploy GitHub Pages
 on:
   push:
     branches: [main]
@@ -27,6 +27,8 @@ jobs:
         env:
           BASE_PATH: ''
           SITE_URL: https://roadpick.store
+      - name: Verify pages and publication scenarios
+        run: node scripts/verify.mjs
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
