@@ -268,7 +268,8 @@ async function save(route, title, description, content, lang, active = '', artic
   const article = articles.find(a => a.lang === lang && route === `articles/${a.slug}/`);
   const emptyCategory = route.startsWith('category/') && !listedArticles.some(a => a.lang === lang && route === `category/${a.category.slug}/`);
   const emptyListing = (route === '' || route === 'articles/') && !listedArticles.some(a => a.lang === lang);
-  const noindex = site.preview || route === '404/' || article?.status === 'sample' || emptyCategory || emptyListing;
+  // Contact is an operational utility page, retained in navigation but excluded from search.
+  const noindex = site.preview || route === '404/' || route === 'contact/' || article?.status === 'sample' || emptyCategory || emptyListing;
   const canonical = siteUrl && route !== '404/' ? `${siteUrl}/${actualRoute}` : '';
   const shareImage = article?.cover ? `${siteUrl}/${article.cover}` : `${siteUrl}/${site.brandImage}`;
   const shareAlt = article ? article.coverSample === 'true' ? lang === 'ko' ? 'AI가 만든 화면 구성용 예시 이미지' : 'AI-generated layout illustration' : article.title : 'ROAD-PEAK — DRIVE THE PEAK';

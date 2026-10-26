@@ -46,6 +46,10 @@ for (const [route, html] of pages) {
     assert(description && !descriptions.has(description), `${route}: distinct description`); descriptions.add(description);
   }
   if (site.preview) assert(html.includes('name="robots" content="noindex,follow"'), `${route}: preserve preview`);
+  if (/\/contact\/$/.test(route)) {
+    assert(html.includes('name="robots" content="noindex,follow"'), `${route}: contact utility stays noindex`);
+    assert(html.includes(`mailto:${site.contactEmail}`), `${route}: keep the real contact channel available`);
+  }
   for (const [, other, target] of html.matchAll(/<link rel="alternate" hreflang="([^"]+)" href="([^"]+)"/g)) {
     const targetPage = pages.get(new URL(unescape(target)).pathname.slice(base.length));
     assert(targetPage, `${route}: existing alternate ${target}`);
