@@ -1,5 +1,6 @@
 import { readFile, readdir, mkdir, writeFile, cp, rm, lstat } from 'node:fs/promises';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { languages, locales } from './locales.mjs';
 import { siteInfo } from './site-info.mjs';
@@ -7,6 +8,7 @@ import { jsonLd, pageMetadata, sitemapXml } from './metadata.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = path.join(root, 'dist');
+const styleVersion = createHash('sha256').update(await readFile(path.join(root, 'assets/style.css'))).digest('hex').slice(0, 12);
 const site = JSON.parse(await readFile(path.join(root, 'content/site.json'), 'utf8'));
 const rawBase = process.env.BASE_PATH ?? site.basePath;
 const base = rawBase === '/' ? '' : rawBase.replace(/\/$/, '');
@@ -297,7 +299,7 @@ async function save(route, title, description, content, lang, active = '', artic
   const ownershipTag = lang === 'ko' && route === '' && site.naverSiteVerification
     ? `<meta name="naver-site-verification" content="${escape(site.naverSiteVerification)}">` : '';
   const html = `<!doctype html>
-<html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escape(title)}${title === siteName(lang) ? '' : ` | ${escape(siteName(lang))}`}</title><meta name="description" content="${escape(description)}"><meta name="robots" content="${noindex ? 'noindex,follow' : 'index,follow'}">${canonical ? `<link rel="canonical" href="${escape(canonical)}">` : ''}${alternates}${sharing}${schema}${ownershipTag}<meta name="theme-color" content="#ffffff"><link rel="icon" href="${href('assets/favicon.svg')}" type="image/svg+xml"><link rel="stylesheet" href="${href('assets/style.css')}"></head><body>${header(active, lang, variants)}${site.preview ? `<div class="preview-note"><span class="preview-dot" aria-hidden="true"></span>${ui.preview} <span class="preview-divider">·</span> ${ui.previewText}</div>` : ''}${content}${footer(lang)}<script src="${href('assets/search.js')}" defer></script></body></html>`;
+<html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escape(title)}${title === siteName(lang) ? '' : ` | ${escape(siteName(lang))}`}</title><meta name="description" content="${escape(description)}"><meta name="robots" content="${noindex ? 'noindex,follow' : 'index,follow'}">${canonical ? `<link rel="canonical" href="${escape(canonical)}">` : ''}${alternates}${sharing}${schema}${ownershipTag}<meta name="theme-color" content="#ffffff"><link rel="icon" href="${href('assets/favicon.svg')}" type="image/svg+xml"><link rel="stylesheet" href="${href('assets/style.css')}?v=${styleVersion}"></head><body>${header(active, lang, variants)}${site.preview ? `<div class="preview-note"><span class="preview-dot" aria-hidden="true"></span>${ui.preview} <span class="preview-divider">·</span> ${ui.previewText}</div>` : ''}${content}${footer(lang)}<script src="${href('assets/search.js')}" defer></script></body></html>`;
   const target = path.join(out, actualRoute, 'index.html');
   await mkdir(path.dirname(target), { recursive: true });
   await writeFile(target, html);
