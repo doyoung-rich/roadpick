@@ -45,3 +45,5 @@ html[lang="zh-Hans"] .article-body,html[lang="zh-Hans"] .article-header h1{line-
 html[lang="ja"] .article-body{line-height:1.95}html[lang="vi"] .article-header h1,html[lang="vi"] .post-card h2{overflow-wrap:anywhere;letter-spacing:0}html[lang="vi"] .main-nav{gap:16px}@media(max-width:700px){html[lang="vi"] .main-nav{gap:4px;flex-wrap:wrap;justify-content:flex-start}html[lang="vi"] .main-nav a{padding:0 7px}.language-switch{flex-wrap:wrap;white-space:normal;font-size:12px;gap:7px}}
 
 html[lang="ja"] body,html[lang="zh-Hans"] body{word-break:normal;overflow-wrap:break-word;line-break:strict}
+
+.post-card .thumbnail img[src$="chuncheon-marathon-record-cover-2026.webp"]{object-fit:contain;background:#000}.article-figure img[src$="chuncheon-marathon-record-cover-2026.webp"]{max-height:720px;object-fit:contain;background:#000}

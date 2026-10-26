@@ -79,7 +79,7 @@ async function renderMarkdown(markdown, lang) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) { flushParagraph(); closeList(); continue; }
-    const image = /^!\[([^\]]+)\]\((assets\/images\/[a-zA-Z0-9/_-]+\.(?:png|jpe?g))\)$/.exec(line);
+    const image = /^!\[([^\]]+)\]\((assets\/images\/[a-zA-Z0-9/_-]+\.(?:png|jpe?g|webp))\)$/.exec(line);
     if (image) {
       flushParagraph(); closeList();
       const [, alt, source] = image;
@@ -88,6 +88,22 @@ async function renderMarkdown(markdown, lang) {
       let width, height;
       if (bytes.length >= 24 && bytes.subarray(0, 8).toString('hex') === '89504e470d0a1a0a') {
         width = bytes.readUInt32BE(16); height = bytes.readUInt32BE(20);
+      } else if (bytes.length >= 30 && bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP') {
+        for (let offset = 12; offset + 8 <= bytes.length;) {
+          const type = bytes.toString('ascii', offset, offset + 4), size = bytes.readUInt32LE(offset + 4), start = offset + 8;
+          if (start + size > bytes.length) break;
+          if (type === 'VP8X' && size >= 10) {
+            width = 1 + bytes.readUIntLE(start + 4, 3); height = 1 + bytes.readUIntLE(start + 7, 3); break;
+          }
+          if (type === 'VP8 ' && size >= 10 && bytes.subarray(start + 3, start + 6).toString('hex') === '9d012a') {
+            width = bytes.readUInt16LE(start + 6) & 0x3fff; height = bytes.readUInt16LE(start + 8) & 0x3fff; break;
+          }
+          if (type === 'VP8L' && size >= 5 && bytes[start] === 0x2f) {
+            const bits = bytes.readUInt32LE(start + 1);
+            width = 1 + (bits & 0x3fff); height = 1 + ((bits >>> 14) & 0x3fff); break;
+          }
+          offset = start + size + (size % 2);
+        }
       } else if (bytes.length >= 4 && bytes.readUInt16BE(0) === 0xffd8) {
         for (let offset = 2; offset + 9 < bytes.length;) {
           if (bytes[offset] !== 0xff) break;
@@ -179,6 +195,7 @@ for (const { file, lang, directory } of files) {
   if (!['ready', 'sample'].includes(metadata.status)) throw new Error(`${file}: status must be draft, sample or ready.`);
   if (metadata.lang && metadata.lang !== lang) throw new Error(`${file}: lang must match its directory (${lang}).`);
   if (!metadata.title || !metadata.summary || !metadata.description) throw new Error(`${file}: title, summary and description are required.`);
+  if (Boolean(metadata.primaryCtaLabel) !== Boolean(metadata.primaryCtaUrl)) throw new Error(`${file}: primaryCtaLabel and primaryCtaUrl must be provided together.`);
   const category = categories.find(c => [c.name, c.menuLabel, c.enName, c.enMenuLabel, c.slug, ...(c.aliases || [])].includes(metadata.category));
   if (!category) throw new Error(`${file}: unknown category.`);
   const slug = file.replace(/\.md$/, '');
@@ -313,8 +330,9 @@ for (const lang of languages) {
   for (const a of articles.filter(article => article.lang === lang)) {
     const variants = Object.fromEntries(languages.map(other => articleByTranslation.get(`${other}:${a.translationKey}`)).filter(Boolean).map(other => [other.lang, articleRoute(other)]));
     const missing = Object.keys(variants).length === 1 ? `<aside class="translation-notice"><p>${ui.missingTranslation} <a href="${href(`${localizedRoute('articles/', lang)}#translation-unavailable`)}">${ui.missingLink} <span aria-hidden="true">→</span></a></p></aside>` : '';
+    const quickCta = a.primaryCtaUrl ? (await renderMarkdown(`:::cta hand\n[${a.primaryCtaLabel}](${a.primaryCtaUrl})\n:::`, lang)).html : '';
     const toc = a.toc.length ? `<details class="toc" open><summary>${ui.toc} <span aria-hidden="true">⌄</span></summary><ol>${a.toc.filter(x => x.level === 2).map(x => `<li><a href="#${x.id}">${escape(x.title)}</a></li>`).join('')}</ol></details>` : '';
-    await save(`articles/${a.slug}/`, a.title, a.description, `<main id="main" class="article-main">${breadcrumb([{label:ui.home,route:localizedRoute('', lang)},{label:categoryName(a.category, lang),route:categoryRoute(a.category, lang)},{label:a.title}], lang, a.status === 'ready')}<article><header class="article-header"><h1>${escape(a.title)}</h1>${meta(a)}</header>${missing}<div class="answer-summary"><span class="summary-label">${ui.summary}</span><p>${escape(a.summary)}</p></div>${readingSuggestions(a)}${toc}<div class="article-body">${a.html}</div></article></main>`, lang, a.category.slug, variants);
+    await save(`articles/${a.slug}/`, a.title, a.description, `<main id="main" class="article-main">${breadcrumb([{label:ui.home,route:localizedRoute('', lang)},{label:categoryName(a.category, lang),route:categoryRoute(a.category, lang)},{label:a.title}], lang, a.status === 'ready')}<article><header class="article-header"><h1>${escape(a.title)}</h1>${meta(a)}</header>${missing}<div class="answer-summary"><span class="summary-label">${ui.summary}</span><p>${escape(a.summary)}</p></div>${quickCta}${readingSuggestions(a)}${toc}<div class="article-body">${a.html}</div></article></main>`, lang, a.category.slug, variants);
   }
   const infoPage = (title, body, structured = true) => `<main id="main" class="article-main info-page">${breadcrumb([{label:ui.home,route:localizedRoute('', lang)},{label:title}], lang, structured)}<h1>${escape(title)}</h1><div class="article-body">${body}</div></main>`;
   for (const [route, info] of Object.entries(siteInfo({...site, brandImageHref:escape(href(site.brandImage))}, lang, escape))) {

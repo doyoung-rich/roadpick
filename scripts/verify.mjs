@@ -46,6 +46,13 @@ for (const [route, html] of pages) {
     assert(description && !descriptions.has(description), `${route}: distinct description`); descriptions.add(description);
   }
   if (site.preview) assert(html.includes('name="robots" content="noindex,follow"'), `${route}: preserve preview`);
+  assert(!/!\[[^\]]*\]\(assets\/images\//.test(html), `${route}: article images are rendered, not raw Markdown`);
+  if (route === '/articles/chuncheon-marathon-record-2026/') {
+    const official = html.indexOf('class="article-cta-button" href="https://www.chuncheonmarathon.com/record/tournament.html"');
+    assert(official > 0 && official < html.indexOf('<details class="toc"'), 'Official marathon CTA precedes the contents navigation.');
+    assert(html.includes(`src="${base}/assets/images/chuncheon-marathon-record-cover-2026.webp" width="1200" height="1200"`), 'WebP cover has real dimensions.');
+    assert(html.includes(`src="${base}/assets/images/chuncheon-marathon-runners-reference.webp" width="482" height="305"`), 'WebP race reference has real dimensions.');
+  }
   if (/\/contact\/$/.test(route)) {
     assert(html.includes('name="robots" content="noindex,follow"'), `${route}: contact utility stays noindex`);
     assert(html.includes(`mailto:${site.contactEmail}`), `${route}: keep the real contact channel available`);
