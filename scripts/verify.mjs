@@ -50,6 +50,12 @@ for (const [route, html] of pages) {
     assert(html.includes('name="robots" content="noindex,follow"'), `${route}: contact utility stays noindex`);
     assert(html.includes(`mailto:${site.contactEmail}`), `${route}: keep the real contact channel available`);
   }
+  if (/\/privacy\/$/.test(route)) {
+    assert(html.includes(site.policyUpdated), `${route}: current policy date`);
+    assert(html.includes(`mailto:${site.contactEmail}`), `${route}: privacy contact`);
+    const retention = route.startsWith('/en/') ? 'six months' : route.startsWith('/zh/') ? '6个月' : route.startsWith('/ja/') ? '6か月' : route.startsWith('/vi/') ? 'sáu tháng' : '6개월';
+    assert(html.includes(retention), `${route}: operator-approved retention`);
+  }
   for (const [, other, target] of html.matchAll(/<link rel="alternate" hreflang="([^"]+)" href="([^"]+)"/g)) {
     const targetPage = pages.get(new URL(unescape(target)).pathname.slice(base.length));
     assert(targetPage, `${route}: existing alternate ${target}`);

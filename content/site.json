@@ -157,5 +157,7 @@
   "jaName": "ROAD-PEAK 日本語",
   "viName": "ROAD-PEAK Tiếng Việt",
   "jaDescription": "韓国旅行と暮らしに役立つ情報を、韓国語・中国語簡体字・日本語・ベトナム語でお届けします。",
-  "viDescription": "ROAD-PEAK cung cấp thông tin hữu ích và hướng dẫn du lịch Hàn Quốc bằng tiếng Hàn, Trung giản thể, Nhật và Việt."
+  "viDescription": "ROAD-PEAK cung cấp thông tin hữu ích và hướng dẫn du lịch Hàn Quốc bằng tiếng Hàn, Trung giản thể, Nhật và Việt.",
+  "inquiryRetentionMonths": 6,
+  "policyUpdated": "2026-10-27"
 }
