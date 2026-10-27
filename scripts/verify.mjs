@@ -148,7 +148,8 @@ try {
     const translated = path.join(fixture, 'content/articles', language, 'korea-entry-requirements-2026.md');
     const source = await readFile(translated, 'utf8');
     assert(source.includes('date: 2026-10-26'));
-    await writeFile(translated, source.replace('date: 2026-10-26', 'date: 2026-10-26\nmodified: 2026-10-27'));
+    // Set the fixture date independently of a real article's later updates.
+    await writeFile(translated, source.replace(/^modified:.*\r?\n/gm, '').replace('date: 2026-10-26', 'date: 2026-10-26\nmodified: 2026-10-27'));
   }
   execFileSync(process.execPath, ['scripts/build.mjs'], { cwd: fixture, env, stdio: 'pipe' });
   for (const [language, label] of [['ja', '更新'], ['vi', 'Cập nhật']]) {
