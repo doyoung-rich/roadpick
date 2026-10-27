@@ -6,6 +6,7 @@ summary: ビザの要否、K-ETAの要否、入国申告の要否は別々に確
 cover: assets/images/korea-entry-passport-2026.webp
 status: ready
 date: 2026-10-26
+modified: 2026-10-28
 lang: ja
 translationKey: korea-entry-requirements-2026
 keywords: 韓国, 入国, ビザ, K-ETA, 電子入国申告, インチョン空港, 旅行, パスポート
@@ -164,3 +165,12 @@ ROAD-PEAKは独立した情報サイトで、政府機関や申請代行サー�
 - [法務部の提出日例](https://www.immigration.go.kr/bbs/immigration_eng/229/478022/download.do)
 
 最終確認：**2026年10月26日**。運営者の原稿を翻訳・編集し、日付例、比較表と準備表を補いました。写真は説明用です。制度は自動更新されませんので、出発前に再確認してください。
+
+
+## 電子入国申告の書き方を詳しく確認
+
+日本のパスポートで短期観光する方向けに、対象者、提出できる日付、無料の公式サイトと入力手順を別記事で整理しました。
+
+:::cta hand
+[電子入国申告の書き方とK-ETAの違い](/ja/articles/korea-e-arrival-card-2026/)
+:::
