@@ -25,6 +25,12 @@ async function scan(folder) {
 }
 await scan(path.join(root, 'dist'));
 assert(pages.size > 0, 'Build before running verification.');
+if (pages.has('/vi/cach-lam-com-tron-han-quoc/')) {
+  const recipe = pages.get('/vi/cach-lam-com-tron-han-quoc/');
+  assert(recipe.includes('"@type":"BlogPosting"'), 'Custom article routes retain article metadata.');
+  assert(pages.get('/vi/articles/').includes(`href="${base}/vi/cach-lam-com-tron-han-quoc/"`), 'Vietnamese listing links to the requested recipe URL.');
+  assert(!pages.has('/vi/articles/cach-lam-com-tron-han-quoc/'), 'Do not generate a duplicate article URL.');
+}
 const titles = new Set(), descriptions = new Set();
 for (const [route, html] of pages) {
   const error = route === '/404.html' || /\/404\/$/.test(route);
@@ -138,6 +144,8 @@ try {
   for (const file of samples) await writeFile(file, (await readFile(file, 'utf8')).replace('status: sample', 'status: ready'));
   const subject = samples.find(file => path.basename(file) === 'application-guide.md' && path.dirname(file).endsWith('articles'));
   const clean = await readFile(subject, 'utf8');
+  await writeFile(subject, clean.replace('status: ready', 'status: ready\npermalink: ../outside'));
+  result = build(); assert.notEqual(result.status, 0); assert(result.stderr.includes('permalink must'));
   await writeFile(subject, clean.replace('status: ready', 'status: unknown'));
   result = build(); assert.notEqual(result.status, 0); assert(result.stderr.includes('status must'));
   await writeFile(subject, clean.replace('status: ready', 'status: ready\ndate: 2026-02-30'));

@@ -34,7 +34,8 @@ const shareLanguage = lang => ({ ko: 'ko_KR', en: 'en_US', 'zh-Hans': 'zh_CN', j
 const localizedRoute = (route, lang = 'ko') => `${languageDirectory(lang) ? languageDirectory(lang) + '/' : ''}${route}`;
 const groupRoute = (group, lang = 'ko') => localizedRoute(`category/${group.slug}/`, lang);
 const categoryRoute = groupRoute;
-const articleRoute = article => localizedRoute(`articles/${article.slug}/`, article.lang);
+const articleLocalRoute = article => article.permalink ? `${article.permalink}/` : `articles/${article.slug}/`;
+const articleRoute = article => localizedRoute(articleLocalRoute(article), article.lang);
 const siteName = lang => lang === 'ko' ? site.name : ({ 'zh-Hans': site.zhName, ja: site.jaName, vi: site.viName })[lang] || site.enName;
 const siteDescription = lang => ({ ko: site.description, en: site.enDescription, 'zh-Hans': site.zhDescription, ja: site.jaDescription, vi: site.viDescription })[lang];
 const categoryName = (category, lang) => ({ ko: category.name, en: category.enName, 'zh-Hans': category.zhName, ja: category.jaName, vi: category.viName })[lang];
@@ -202,6 +203,7 @@ for (const { file, lang, directory } of files) {
   if (!category) throw new Error(`${file}: unknown category.`);
   const slug = file.replace(/\.md$/, '');
   if (!/^[a-z0-9-]+$/.test(slug)) throw new Error(`${file}: use lowercase letters and hyphens in filenames.`);
+  if (metadata.permalink && (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(metadata.permalink) || ['articles', 'category', 'about', 'contact', 'privacy', 'terms', 'standards', '404', 'assets', 'en', 'zh', 'ja', 'vi'].includes(metadata.permalink))) throw new Error(`${file}: permalink must be a safe, non-reserved single path segment.`);
   const translationKey = metadata.translationKey || slug;
   if (!/^[a-z0-9-]+$/.test(translationKey)) throw new Error(`${file}: translationKey must use lowercase letters, digits and hyphens.`);
   for (const field of ['date', 'modified']) {
@@ -222,6 +224,7 @@ for (const { file, lang, directory } of files) {
   articles.push({ ...metadata, cover, lang, translationKey, keywords, slug, category, searchText, ...rendered });
 }
 articles.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+if (new Set(articles.map(articleRoute)).size !== articles.length) throw new Error('Article routes must be unique.');
 const articleByTranslation = new Map();
 for (const article of articles) {
   const key = `${article.lang}:${article.translationKey}`;
@@ -284,7 +287,7 @@ async function save(route, title, description, content, lang, active = '', artic
   const ui = locales[lang];
   const actualRoute = localizedRoute(route, lang);
   const variants = articleVariants ?? Object.fromEntries(languages.map(other => [other, localizedRoute(route, other)]));
-  const article = articles.find(a => a.lang === lang && route === `articles/${a.slug}/`);
+  const article = articles.find(a => a.lang === lang && route === articleLocalRoute(a));
   const emptyCategory = route.startsWith('category/') && !listedArticles.some(a => a.lang === lang && route === `category/${a.category.slug}/`);
   const emptyListing = (route === '' || route === 'articles/') && !listedArticles.some(a => a.lang === lang);
   // Contact is an operational utility page, retained in navigation but excluded from search.
@@ -334,7 +337,7 @@ for (const lang of languages) {
     const missing = Object.keys(variants).length === 1 ? `<aside class="translation-notice"><p>${ui.missingTranslation} <a href="${href(`${localizedRoute('articles/', lang)}#translation-unavailable`)}">${ui.missingLink} <span aria-hidden="true">→</span></a></p></aside>` : '';
     const quickCta = a.primaryCtaUrl ? (await renderMarkdown(`:::cta hand\n[${a.primaryCtaLabel}](${a.primaryCtaUrl})\n:::`, lang)).html : '';
     const toc = a.toc.length ? `<details class="toc" open><summary>${ui.toc} <span aria-hidden="true">⌄</span></summary><ol>${a.toc.filter(x => x.level === 2).map(x => `<li><a href="#${x.id}">${escape(x.title)}</a></li>`).join('')}</ol></details>` : '';
-    await save(`articles/${a.slug}/`, a.title, a.description, `<main id="main" class="article-main">${breadcrumb([{label:ui.home,route:localizedRoute('', lang)},{label:categoryName(a.category, lang),route:categoryRoute(a.category, lang)},{label:a.title}], lang, a.status === 'ready')}<article><header class="article-header"><h1>${escape(a.title)}</h1>${meta(a)}</header>${missing}<div class="answer-summary"><span class="summary-label">${ui.summary}</span><p>${escape(a.summary)}</p></div>${quickCta}${readingSuggestions(a)}${toc}<div class="article-body">${a.html}</div></article></main>`, lang, a.category.slug, variants);
+    await save(articleLocalRoute(a), a.title, a.description, `<main id="main" class="article-main">${breadcrumb([{label:ui.home,route:localizedRoute('', lang)},{label:categoryName(a.category, lang),route:categoryRoute(a.category, lang)},{label:a.title}], lang, a.status === 'ready')}<article><header class="article-header"><h1>${escape(a.title)}</h1>${meta(a)}</header>${missing}<div class="answer-summary"><span class="summary-label">${ui.summary}</span><p>${escape(a.summary)}</p></div>${quickCta}${readingSuggestions(a)}${toc}<div class="article-body">${a.html}</div></article></main>`, lang, a.category.slug, variants);
   }
   const infoPage = (title, body, structured = true) => `<main id="main" class="article-main info-page">${breadcrumb([{label:ui.home,route:localizedRoute('', lang)},{label:title}], lang, structured)}<h1>${escape(title)}</h1><div class="article-body">${body}</div></main>`;
   for (const [route, info] of Object.entries(siteInfo({...site, brandImageHref:escape(href(site.brandImage))}, lang, escape))) {
