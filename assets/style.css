@@ -47,3 +47,5 @@ html[lang="ja"] .article-body{line-height:1.95}html[lang="vi"] .article-header h
 html[lang="ja"] body,html[lang="zh-Hans"] body{word-break:normal;overflow-wrap:break-word;line-break:strict}
 
 .post-card .thumbnail img[src$="chuncheon-marathon-record-cover-2026.webp"]{object-fit:contain;background:#000}.article-figure img[src$="chuncheon-marathon-record-cover-2026.webp"]{max-height:720px;object-fit:contain;background:#000}
+
+.post-card .thumbnail img[src$="undercover-chef-cover-2026.webp"]{object-fit:contain;background:#000}
