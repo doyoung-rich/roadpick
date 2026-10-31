@@ -266,7 +266,8 @@ await cp(path.join(root, 'assets'), path.join(out, 'assets'), { recursive: true 
 function header(active, lang, variants) {
   const ui = locales[lang];
   const nav = site.categories.map(c => `<a href="${href(groupRoute(c, lang))}"${active === c.slug ? ' class="active-group" aria-current="true"' : ''}>${escape(categoryLabel(c, lang))}</a>`).join('');
-  const switches = menuLanguages.map(other => other === lang
+  const visibleLanguages = lang === 'en' || /^en\/articles\/[^/]+\/$/.test(variants.en || '') ? [...menuLanguages, 'en'] : menuLanguages;
+  const switches = visibleLanguages.map(other => other === lang
     ? `<span lang="${other}" aria-current="true">${languageLabel(other)}</span>`
     : `<a lang="${other}" hreflang="${other}" href="${href(variants[other] ?? `${localizedRoute('articles/', other)}#translation-unavailable`)}">${languageLabel(other)}</a>`).join('<span class="language-divider" aria-hidden="true">/</span>');
   return `<a class="skip-link" href="#main">${ui.skip}</a>
