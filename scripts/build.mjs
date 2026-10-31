@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { languages, locales } from './locales.mjs';
 import { siteInfo } from './site-info.mjs';
 import { jsonLd, pageMetadata, sitemapXml } from './metadata.mjs';
+import { rssFeed, llmsIndex } from './discovery.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = path.join(root, 'dist');
@@ -37,6 +38,7 @@ const categoryRoute = groupRoute;
 const articleLocalRoute = article => article.permalink ? `${article.permalink}/` : `articles/${article.slug}/`;
 const articleRoute = article => localizedRoute(articleLocalRoute(article), article.lang);
 const siteName = lang => lang === 'ko' ? site.name : ({ 'zh-Hans': site.zhName, ja: site.jaName, vi: site.viName })[lang] || site.enName;
+const homeTitle = lang => ({ ko: '한국 여행·생활 정보 가이드', en: 'Korea travel and everyday guides', 'zh-Hans': '韩国旅行与实用生活指南', ja: '韓国旅行と暮らしの実用ガイド', vi: 'Cẩm nang du lịch Hàn Quốc và đời sống' })[lang];
 const siteDescription = lang => ({ ko: site.description, en: site.enDescription, 'zh-Hans': site.zhDescription, ja: site.jaDescription, vi: site.viDescription })[lang];
 const categoryName = (category, lang) => ({ ko: category.name, en: category.enName, 'zh-Hans': category.zhName, ja: category.jaName, vi: category.viName })[lang];
 const categoryLabel = (category, lang) => ({ ko: category.menuLabel, en: category.enMenuLabel, 'zh-Hans': category.zhMenuLabel, ja: category.jaMenuLabel, vi: category.viMenuLabel })[lang];
@@ -279,7 +281,7 @@ function header(active, lang, variants) {
 
 const footer = lang => {
   const ui = locales[lang];
-  return `<footer class="site-footer"><div class="footer-inner"><p class="footer-brand">${escape(siteName(lang))}${site.temporaryName ? ` <small>${ui.temporary}</small>` : ''}</p><nav aria-label="${ui.siteInfo}"><a href="${href(localizedRoute('articles/', lang))}">${ui.allLink}</a>${Object.entries(ui.info).map(([route, info]) => `<a href="${href(localizedRoute(`${route}/`, lang))}">${info.title}</a>`).join('')}</nav><p class="footer-note">${site.preview ? ui.footerNote : escape(siteDescription(lang))}</p><p class="copyright">© ${escape(siteName(lang))}</p></div></footer>`;
+  return `<footer class="site-footer"><div class="footer-inner"><p class="footer-brand">${escape(siteName(lang))}${site.temporaryName ? ` <small>${ui.temporary}</small>` : ''}</p><nav aria-label="${ui.siteInfo}"><a href="${href(localizedRoute('articles/', lang))}">${ui.allLink}</a>${Object.entries(ui.info).map(([route, info]) => `<a href="${href(localizedRoute(`${route}/`, lang))}">${info.title}</a>`).join('')}<a href="mailto:${escape(site.contactEmail)}">${escape(site.contactEmail)}</a>${!site.preview ? `<a href="${href(localizedRoute('rss.xml', lang))}">RSS</a>` : ''}</nav><p class="footer-note">${site.preview ? ui.footerNote : escape(siteDescription(lang))}</p><p class="copyright">© ${escape(siteName(lang))}</p></div></footer>`;
 };
 
 const builtRoutes = [];
@@ -302,8 +304,11 @@ async function save(route, title, description, content, lang, active = '', artic
   const schema = pageMetadata({ site: { ...site, siteUrl }, lang, route, canonical, title, description, article, emptyCategory });
   const ownershipTag = lang === 'ko' && route === '' && site.naverSiteVerification
     ? `<meta name="naver-site-verification" content="${escape(site.naverSiteVerification)}">` : '';
+  const inlineHashes = [...`${content}${schema}`.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].map(([, json]) => `'sha256-${createHash('sha256').update(json).digest('base64')}'`);
+  const policy = `default-src 'none'; base-uri 'self'; object-src 'none'; script-src 'self' ${inlineHashes.join(' ')}; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; form-action 'self'; upgrade-insecure-requests`;
+  const feed = !site.preview ? `<link rel="alternate" type="application/rss+xml" title="${escape(siteName(lang))} RSS" href="${href(localizedRoute('rss.xml', lang))}">` : '';
   const html = `<!doctype html>
-<html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escape(title)}${title === siteName(lang) ? '' : ` | ${escape(siteName(lang))}`}</title><meta name="description" content="${escape(description)}"><meta name="robots" content="${noindex ? 'noindex,follow' : 'index,follow'}">${canonical ? `<link rel="canonical" href="${escape(canonical)}">` : ''}${alternates}${sharing}${schema}${ownershipTag}<meta name="theme-color" content="#ffffff"><link rel="icon" href="${href('assets/favicon.svg')}" type="image/svg+xml"><link rel="stylesheet" href="${href('assets/style.css')}?v=${styleVersion}"></head><body>${header(active, lang, variants)}${site.preview ? `<div class="preview-note"><span class="preview-dot" aria-hidden="true"></span>${ui.preview} <span class="preview-divider">·</span> ${ui.previewText}</div>` : ''}${content}${footer(lang)}<script src="${href('assets/search.js')}" defer></script></body></html>`;
+<html lang="${lang}"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${escape(policy)}"><meta name="referrer" content="strict-origin-when-cross-origin">${feed}<meta name="viewport" content="width=device-width, initial-scale=1"><title>${escape(title)}${title === siteName(lang) ? '' : ` | ${escape(siteName(lang))}`}</title><meta name="description" content="${escape(description)}"><meta name="robots" content="${noindex ? 'noindex,follow' : 'index,follow'}">${canonical ? `<link rel="canonical" href="${escape(canonical)}">` : ''}${alternates}${sharing}${schema}${ownershipTag}<meta name="theme-color" content="#ffffff"><link rel="icon" href="${href('assets/favicon.svg')}" type="image/svg+xml"><link rel="stylesheet" href="${href('assets/style.css')}?v=${styleVersion}"></head><body>${header(active, lang, variants)}${site.preview ? `<div class="preview-note"><span class="preview-dot" aria-hidden="true"></span>${ui.preview} <span class="preview-divider">·</span> ${ui.previewText}</div>` : ''}${content}${footer(lang)}<script src="${href('assets/search.js')}" defer></script></body></html>`;
   const target = path.join(out, actualRoute, 'index.html');
   await mkdir(path.dirname(target), { recursive: true });
   await writeFile(target, html);
@@ -327,7 +332,7 @@ for (const lang of languages) {
   const searchEmpty = `<div class="search-empty" data-search-empty hidden><h2>${ui.searchEmpty}</h2><p>${ui.searchHint}</p><button type="button" data-search-clear>${ui.allLink}</button></div><noscript><p class="search-fallback">${ui.noScript}</p></noscript>`;
   const fallback = `<aside class="translation-notice translation-fallback" id="translation-unavailable"><strong>${ui.fallbackTitle}</strong><p>${ui.fallback}</p></aside>`;
   const intro = `<section class="site-intro" aria-label="${ui.info.about.title}"><div><p class="intro-eyebrow">${lang === 'ko' ? '필요한 정보를, 고르기 쉽게' : lang === 'zh-Hans' ? '实用信息，轻松选择' : lang === 'ja' ? '必要な情報を、選びやすく' : lang === 'vi' ? 'Thông tin hữu ích, lựa chọn dễ dàng' : 'Practical answers, easier choices'}</p><h1>${escape(siteName(lang))}</h1><p>${escape(siteDescription(lang))}</p></div><img src="${href(site.brandImage)}" width="1024" height="1024" alt="ROAD-PEAK — DRIVE THE PEAK" decoding="async"></section>`;
-  await save('', siteName(lang), siteDescription(lang), `<main id="main" class="listing-main home-main" data-search-page>${intro}<div class="listing-heading"><h2 data-search-title>${ui.latest}</h2>${searchStatus}</div>${list(entries, lang)}${!entries.length ? emptyState(lang) : ''}${searchEmpty}<a class="browse-all" href="${href(localizedRoute('articles/', lang))}">${ui.allLink} <span aria-hidden="true">→</span></a></main>`, lang, 'home');
+  await save('', homeTitle(lang), siteDescription(lang), `<main id="main" class="listing-main home-main" data-search-page>${intro}<div class="listing-heading"><h2 data-search-title>${ui.latest}</h2>${searchStatus}</div>${list(entries, lang)}${!entries.length ? emptyState(lang) : ''}${searchEmpty}<a class="browse-all" href="${href(localizedRoute('articles/', lang))}">${ui.allLink} <span aria-hidden="true">→</span></a></main>`, lang, 'home');
   await save('articles/', ui.all, ui.allDescription, `<main id="main" class="listing-main" data-search-page>${breadcrumb([{label:ui.home,route:localizedRoute('', lang)},{label:ui.all}], lang)}${fallback}<div class="listing-heading"><h1 data-search-title>${ui.all}</h1>${searchStatus}</div>${list(entries, lang)}${!entries.length ? emptyState(lang) : ''}${searchEmpty}</main>`, lang, 'all');
   for (const group of site.categories) {
     const matches = entries.filter(a => a.category.slug === group.slug), name = categoryName(group, lang);
@@ -355,6 +360,11 @@ await writeFile(path.join(out, '.nojekyll'), '');
 await writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\n${!site.preview && siteUrl ? `Sitemap: ${siteUrl}/sitemap.xml\n` : ''}`);
 if (!site.preview) {
   await writeFile(path.join(out, 'sitemap.xml'), sitemapXml(builtRoutes, siteUrl));
+  for (const lang of languages) {
+    const feedRoute = localizedRoute('rss.xml', lang);
+    await writeFile(path.join(out, feedRoute), rssFeed({ siteUrl, name: siteName(lang), description: siteDescription(lang), lang, homeRoute: localizedRoute('', lang), feedRoute, articles: articles.filter(a => a.lang === lang), articleRoute }));
+  }
+  await writeFile(path.join(out, 'llms.txt'), llmsIndex({ site: { ...site, siteUrl }, articles, articleRoute, languages, languageLabel }));
 }
 
 for (const target of ctaTargets) {

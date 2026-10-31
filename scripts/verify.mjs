@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFile, readdir, cp, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { execFileSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -38,6 +39,17 @@ for (const [route, html] of pages) {
   assert.equal((html.match(/<h1(?:\s|>)/g) || []).length, 1, `${route}: one main heading`);
   assert.equal((html.match(/<main(?:\s|>)/g) || []).length, 1, `${route}: one main landmark`);
   assert(html.includes('name="description" content="'), `${route}: description`);
+  const policy = unescape(html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)?.[1] || '');
+  assert(policy.includes("default-src 'none'") && policy.includes("script-src 'self'"), `${route}: static resource policy`);
+  assert(!policy.includes("'unsafe-inline'") && !policy.includes("'unsafe-eval'"), `${route}: no broad script bypass`);
+  assert(html.includes('name="referrer" content="strict-origin-when-cross-origin"'), `${route}: referrer policy`);
+  for (const [, script] of html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)) {
+    assert(policy.includes(`'sha256-${createHash('sha256').update(script).digest('base64')}'`), `${route}: exact structured-data script hash`);
+  }
+  for (const [image] of html.matchAll(/<img\b[^>]*>/g)) {
+    assert(/\bwidth="[1-9]\d*"/.test(image) && /\bheight="[1-9]\d*"/.test(image), `${route}: reserved image dimensions`);
+    assert(/\balt="[^"]*"/.test(image), `${route}: image alternative text`);
+  }
   if (error) {
     assert(html.includes('name="robots" content="noindex,follow"'), `${route}: error noindex`);
     assert(!canonical && !html.includes('hreflang=' + '"ko" href="' + origin + '/404/'), `${route}: no error canonical/alternates`);
@@ -109,6 +121,30 @@ if (site.preview) {
     assert.equal(locations.has(`${origin}${route}`), indexable, `${route}: sitemap matches indexing policy`);
   }
   for (const location of locations) assert(pages.has(new URL(location).pathname), `Existing sitemap page: ${location}`);
+  const llms = await read('dist/llms.txt');
+  for (const [, url] of llms.matchAll(/\]\((https:\/\/[^)]+)\)/g)) {
+    const target = new URL(url);
+    assert.equal(target.origin, new URL(origin).origin, 'Discovery file uses the canonical domain.');
+    if (target.pathname === '/sitemap.xml') continue;
+    assert(pages.has(target.pathname), `Discovery destination exists: ${url}`);
+    assert(!pages.get(target.pathname).includes('class="article-header"') || pages.get(target.pathname).includes('name="robots" content="index,follow"'), 'Discovery excludes sample articles.');
+  }
+  for (const prefix of ['', 'en/', 'zh/', 'ja/', 'vi/']) {
+    const feed = await read(`dist/${prefix}rss.xml`);
+    assert(feed.includes('<rss version="2.0"'), `${prefix}: RSS feed`);
+    const feedLinks = [...feed.matchAll(/<item>.*?<link>(.*?)<\/link>/gs)].map(([, link]) => unescape(link));
+    const expected = [...pages].filter(([route, html]) => {
+      const langPrefix = route.match(/^\/(en|zh|ja|vi)\//)?.[0].slice(1) || '';
+      return langPrefix === prefix && html.includes('class="article-header"') && html.includes('name="robots" content="index,follow"');
+    }).map(([route]) => `${origin}${route}`);
+    assert.deepEqual([...feedLinks].sort(), expected.sort(), `${prefix}: RSS includes every ready article once`);
+    assert(pages.get(`/${prefix}`).includes(`type="application/rss+xml"`), `${prefix}: feed is discoverable`);
+  }
+  const homeGraph = [...pages.get('/').matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].flatMap(([, value]) => JSON.parse(value)['@graph'] || []);
+  const publisher = homeGraph.find(node => node['@type'] === 'Organization');
+  assert.equal(publisher.email, site.contactEmail, 'Publisher uses the confirmed public email.');
+  assert.equal(publisher.logo.url, `${origin}/${site.brandImage}`, 'Publisher uses the supplied logo.');
+  assert(!publisher.sameAs && !publisher.address && !publisher.telephone, 'Do not invent social profiles, an address or a telephone.');
 }
 
 // --static-only checks generated output without spawning fixture builds.
