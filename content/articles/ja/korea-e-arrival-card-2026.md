@@ -158,7 +158,6 @@ primaryCtaUrl: https://www.e-arrivalcard.go.kr/portal/main/index.do?locale=JP
 [日本語の韓国旅行記事を見る](/ja/category/travel/)
 :::
 
-仁川空港からソウルへの行き方、NAVERマップの使い方、交通カードと地下鉄の乗り方は今後の関連記事候補です。未発行の個別記事へのリンクは設けていません。
 
 ## 公式情報・確認日
 

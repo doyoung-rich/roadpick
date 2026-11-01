@@ -201,15 +201,6 @@ Biết đâu đây sẽ trở thành món Hàn Quốc bạn thường xuyên t�
 
 ## Khám phá thêm về ẩm thực và du lịch Hàn Quốc
 
-Nếu yêu thích bibimbap, bạn có thể tìm hiểu thêm những chủ đề sau:
-
-- Gochujang và gochugaru khác nhau thế nào?
-- Cách làm kimbap Hàn Quốc tại nhà
-- Cách tìm nhà hàng Hàn Quốc bằng NAVER Map
-- Những món ăn Hàn Quốc nên thử khi du lịch Seoul
-
-Các chủ đề trên là gợi ý cho những bài viết tiếp theo của Roadpick, chưa phải bài đã phát hành. Bài tiếp theo dự kiến phân biệt **bột ớt Hàn Quốc (gochugaru)** và **tương ớt gochujang**; đường dẫn sẽ được bổ sung sau khi bài được xuất bản.
-
 :::cta hand
 Chuẩn bị nấu món Hàn, hoặc lên kế hoạch đến Hàn Quốc, bạn có thể xem các bài hiện có dưới đây.
 [Xem bài viết tiếng Việt](/vi/articles/)

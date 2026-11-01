@@ -119,7 +119,6 @@ primaryCtaUrl: https://english.visitkorea.or.kr/svc/contents/contentsView.do?vco
 [浏览简体中文旅行文章](/zh/category/travel/)
 :::
 
-NAVER地图、明洞与圣水购物、韩元支付和兑换、仁川机场出境流程是后续主题候选。文章正式发布后再添加实际链接；现有入境准备文章已在上方连接。
 
 ## 官方资料与核对日期
 

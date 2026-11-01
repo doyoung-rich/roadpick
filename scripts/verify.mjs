@@ -107,6 +107,12 @@ for (const [route, html] of pages) {
     } else assert((await readFile(path.join(root, 'dist', decodeURIComponent(pathname)))).length, `${route}: asset ${raw}`);
   }
 }
+if (!site.preview) {
+  for (const [route, html] of pages) {
+    if (route.includes('/category/')) assert(html.includes('class="post-card"'), `${route}: public categories contain real articles`);
+    if (html.includes('class="article-header"')) assert(html.includes('name="robots" content="index,follow"'), `${route}: no deployed layout samples`);
+  }
+}
 const robots = await read('dist/robots.txt');
 assert(robots.includes('Allow: /'), 'Crawling must remain available to read noindex.');
 if (site.preview) {
@@ -166,12 +172,17 @@ try {
   };
   await writeFile(config, JSON.stringify(fixtureSite));
   let result = build(); assert.equal(result.status, 0, result.stderr);
-  const samplePage = await readFile(path.join(fixture, 'dist/articles/application-guide/index.html'), 'utf8');
-  assert(samplePage.includes('content="noindex,follow"'), 'Sample stays noindex after public launch.');
+  await assert.rejects(readFile(path.join(fixture, 'dist/articles/application-guide/index.html')), { code: 'ENOENT' }, 'Sample is not deployed publicly.');
   const publicHome = await readFile(path.join(fixture, 'dist/index.html'), 'utf8');
   assert(!publicHome.includes('href="/articles/application-guide/"'), 'Public listings hide samples.');
   const initialSitemap = await readFile(path.join(fixture, 'dist/sitemap.xml'), 'utf8');
   assert(!initialSitemap.includes('/articles/application-guide/'), 'Sample excluded from public sitemap.');
+  // Preview retains all original sample files and category layouts.
+  await writeFile(config, JSON.stringify({ ...fixtureSite, preview: true }));
+  result = build(); assert.equal(result.status, 0, result.stderr);
+  assert((await readFile(path.join(fixture, 'dist/articles/application-guide/index.html'), 'utf8')).includes('content="noindex,follow"'));
+  assert((await readFile(path.join(fixture, 'dist/category/finance/index.html'), 'utf8')).includes('class="empty-state"'));
+  await writeFile(config, JSON.stringify(fixtureSite));
   const samples = [];
   for (const language of ['', 'en']) {
     const directory = path.join(fixture, 'content/articles', language);
@@ -209,7 +220,17 @@ try {
   const sitemap = await readFile(path.join(fixture, 'dist/sitemap.xml'), 'utf8');
   assert(sitemap.includes('<lastmod>2026-10-19</lastmod>'));
   assert(!sitemap.includes('/404/') && !sitemap.includes('/category/finance/'), 'Exclude errors and empty categories.');
-  assert((await readFile(path.join(fixture, 'dist/category/finance/index.html'), 'utf8')).includes('content="noindex,follow"'));
+  await assert.rejects(readFile(path.join(fixture, 'dist/category/finance/index.html')), { code: 'ENOENT' }, 'Empty category is not deployed.');
+  assert(!(await readFile(path.join(fixture, 'dist/index.html'), 'utf8')).includes('href="/category/finance/"'), 'Empty menu is hidden.');
+  // Publishing the first real article restores both its category and menu automatically.
+  const financeFixture = path.join(fixture, 'content/articles/finance-publication-fixture.md');
+  await writeFile(financeFixture, clean.replace(/^category:.*$/m, 'category: finance'));
+  result = build(); assert.equal(result.status, 0, result.stderr);
+  assert((await readFile(path.join(fixture, 'dist/index.html'), 'utf8')).includes('href="/category/finance/"'), 'First ready article restores its menu.');
+  assert((await readFile(path.join(fixture, 'dist/category/finance/index.html'), 'utf8')).includes('finance-publication-fixture/'), 'Restored category contains the article.');
+  await writeFile(financeFixture, (await readFile(financeFixture, 'utf8')).replace('status: ready', 'status: draft'));
+  result = build(); assert.equal(result.status, 0, result.stderr);
+  await assert.rejects(readFile(path.join(fixture, 'dist/category/finance/index.html')), { code: 'ENOENT' }, 'Unpublishing the last article hides the category again.');
 } finally {
   // The resolved, uniquely created directory is checked before recursive removal.
   assert.equal(path.dirname(path.resolve(fixture)), tempRoot);

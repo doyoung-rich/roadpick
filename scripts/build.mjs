@@ -220,7 +220,7 @@ for (const { file, lang, directory } of files) {
     if (!/^assets\/images\/[a-zA-Z0-9/_-]+\.(?:webp|png|jpe?g|avif)$/.test(cover) || cover.split('/').some(part => part === '.' || part === '..')) throw new Error(`${file}: cover must be a local image in assets/images/.`);
     if (!(await lstat(path.join(root, cover))).isFile()) throw new Error(`${file}: cover image is missing.`);
   }
-  const rendered = await renderMarkdown(match[2], lang);
+  const rendered = metadata.status === 'sample' && !site.preview ? { html: '', toc: [] } : await renderMarkdown(match[2], lang);
   const bodyText = rendered.html.replace(/<[^>]*>/g, ' ').replace(/&(amp|lt|gt|quot|#39);/g, entity => ({'&amp;':'&','&lt;':'<','&gt;':'>','&quot;':'"','&#39;':"'"}[entity])).replace(/\s+/g, ' ');
   const searchText = [metadata.title, metadata.description, metadata.summary, categoryName(category, lang), categoryLabel(category, lang), keywords.join(' '), bodyText].join(' ');
   articles.push({ ...metadata, cover, lang, translationKey, keywords, slug, category, searchText, ...rendered });
@@ -267,7 +267,7 @@ await cp(path.join(root, 'assets'), path.join(out, 'assets'), { recursive: true 
 
 function header(active, lang, variants) {
   const ui = locales[lang];
-  const nav = site.categories.map(c => `<a href="${href(groupRoute(c, lang))}"${active === c.slug ? ' class="active-group" aria-current="true"' : ''}>${escape(categoryLabel(c, lang))}</a>`).join('');
+  const nav = site.categories.filter(c => site.preview || articles.some(a => a.lang === lang && a.status === 'ready' && a.category.slug === c.slug)).map(c => `<a href="${href(groupRoute(c, lang))}"${active === c.slug ? ' class="active-group" aria-current="true"' : ''}>${escape(categoryLabel(c, lang))}</a>`).join('');
   const visibleLanguages = lang === 'en' || /^en\/articles\/[^/]+\/$/.test(variants.en || '') ? [...menuLanguages, 'en'] : menuLanguages;
   const switches = visibleLanguages.map(other => other === lang
     ? `<span lang="${other}" aria-current="true">${languageLabel(other)}</span>`
@@ -289,7 +289,7 @@ const listedArticles = articles.filter(article => site.preview || article.status
 async function save(route, title, description, content, lang, active = '', articleVariants) {
   const ui = locales[lang];
   const actualRoute = localizedRoute(route, lang);
-  const variants = articleVariants ?? Object.fromEntries(languages.map(other => [other, localizedRoute(route, other)]));
+  const variants = articleVariants ?? Object.fromEntries(languages.filter(other => site.preview || !route.startsWith('category/') || articles.some(a => a.status === 'ready' && a.lang === other && route === `category/${a.category.slug}/`)).map(other => [other, localizedRoute(route, other)]));
   const article = articles.find(a => a.lang === lang && route === articleLocalRoute(a));
   const emptyCategory = route.startsWith('category/') && !listedArticles.some(a => a.lang === lang && route === `category/${a.category.slug}/`);
   const emptyListing = (route === '' || route === 'articles/') && !listedArticles.some(a => a.lang === lang);
@@ -336,10 +336,11 @@ for (const lang of languages) {
   await save('articles/', ui.all, ui.allDescription, `<main id="main" class="listing-main" data-search-page>${breadcrumb([{label:ui.home,route:localizedRoute('', lang)},{label:ui.all}], lang)}${fallback}<div class="listing-heading"><h1 data-search-title>${ui.all}</h1>${searchStatus}</div>${list(entries, lang)}${!entries.length ? emptyState(lang) : ''}${searchEmpty}</main>`, lang, 'all');
   for (const group of site.categories) {
     const matches = entries.filter(a => a.category.slug === group.slug), name = categoryName(group, lang);
+    if (!site.preview && !matches.length) continue;
     await save(`category/${group.slug}/`, name, ui.categoryDescription(name), `<main id="main" class="listing-main">${breadcrumb([{label:ui.home,route:localizedRoute('', lang)},{label:name}], lang)}<div class="listing-heading"><h1>${escape(name)}</h1><span class="post-count">${ui.count(matches.length)}</span></div>${matches.length ? list(matches, lang) : emptyState(lang)}</main>`, lang, group.slug);
   }
-  for (const a of articles.filter(article => article.lang === lang)) {
-    const variants = Object.fromEntries(languages.map(other => articleByTranslation.get(`${other}:${a.translationKey}`)).filter(Boolean).map(other => [other.lang, articleRoute(other)]));
+  for (const a of articles.filter(article => article.lang === lang && (site.preview || article.status === 'ready'))) {
+    const variants = Object.fromEntries(languages.map(other => articleByTranslation.get(`${other}:${a.translationKey}`)).filter(other => other && (site.preview || other.status === 'ready')).map(other => [other.lang, articleRoute(other)]));
     const missing = Object.keys(variants).length === 1 ? `<aside class="translation-notice"><p>${ui.missingTranslation} <a href="${href(`${localizedRoute('articles/', lang)}#translation-unavailable`)}">${ui.missingLink} <span aria-hidden="true">→</span></a></p></aside>` : '';
     const quickCta = a.primaryCtaUrl ? (await renderMarkdown(`:::cta hand\n[${a.primaryCtaLabel}](${a.primaryCtaUrl})\n:::`, lang)).html : '';
     const toc = a.toc.length ? `<details class="toc" open><summary>${ui.toc} <span aria-hidden="true">⌄</span></summary><ol>${a.toc.filter(x => x.level === 2).map(x => `<li><a href="#${x.id}">${escape(x.title)}</a></li>`).join('')}</ol></details>` : '';

@@ -128,16 +128,7 @@ KFS nêu 4/11, Weatheri được VISITKOREA giới thiệu nêu 11/11. Đây là
 
 Vị trí, loài cây, tiêu chí và phương pháp có thể khác. Không tự lấy ngày ở giữa làm đáp án; hãy xem quan sát thực tế tại điểm đến.
 
-## 7. Bạn muốn ngắm lá thu ở khu vực nào?
-
-Các hướng dẫn bên dưới **chưa xuất bản nên chưa có liên kết có thể bấm**. Chúng tôi sẽ nối URL thật sau khi đăng.
-
-| Bài theo khu vực dự kiến | Trạng thái |
-| --- | --- |
-| Seoraksan: lá thu và đường mòn | Chờ xuất bản |
-| Palgongsan: lá thu và điểm gần đó | Chờ xuất bản |
-| Naejangsan: lá thu và chuẩn bị đến thăm | Chờ xuất bản |
-| Điểm ngắm lá thu gần Seoul | Chờ xuất bản |
+## 7. Kiểm tra quan sát lá thu chính thức
 
 :::cta hand
 Hiện bạn có thể kiểm tra trang quan sát chính thức. Đối chiếu tên núi tiếng Hàn trong bảng chính.
@@ -169,4 +160,4 @@ Bạn còn chuẩn bị giấy tờ đến Hàn Quốc? Bài này đã xuất b�
 - [VISITKOREA: dự báo Weatheri ngày 8/9](https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=1593230)
 - [Quan sát lá thu KMA](https://www.weather.go.kr/w/forecast/life/seasonal-observation/autumn-leaves.do)
 
-Kiểm tra gần nhất: **26/10/2026**. Bản tiếng Việt được dịch và biên tập từ hướng dẫn hiện có, giữ các bảng, ảnh và chủ đề theo vùng, đồng thời giải thích từ quan sát tiếng Hàn. Ảnh không được dùng làm quan sát trong ngày.
+Kiểm tra gần nhất: **26/10/2026**. Bản tiếng Việt được dịch và biên tập từ hướng dẫn hiện có, giữ các bảng và ảnh, đồng thời giải thích từ quan sát tiếng Hàn. Ảnh không được dùng làm quan sát trong ngày.

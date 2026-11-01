@@ -130,16 +130,7 @@ The KFS forecast used here gives November 4. The Weatheri forecast featured by V
 
 Observation locations, tree species, peak criteria and methods may differ. Rather than assuming the midpoint between two dates is the answer, look for actual observations at your intended destination.
 
-## 7. Which region would you like to explore?
-
-We plan to add regional guides so readers can continue with a destination-specific article. **The four guides below have not been published, so they are not clickable links.** We will connect them after publication.
-
-| Planned regional guide | Status |
-| --- | --- |
-| Seoraksan foliage and trail information | Planned; link to follow after publication |
-| Palgongsan foliage and nearby attractions | Planned; link to follow after publication |
-| Naejangsan foliage and visit preparation | Planned; link to follow after publication |
-| Autumn foliage near Seoul | Planned; link to follow after publication |
+## 7. Check official foliage observations
 
 :::cta hand
 You can check the official observation page now. The destination page is in Korean; use the mountain names in the main table to identify your location.
@@ -168,4 +159,4 @@ ROAD-PEAK distinguishes sourced information from illustrative images. This artic
 - [Korea Tourism Organization VISITKOREA: Weatheri forecast, September 8 (English)](https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=1593230)
 - [KMA mountain foliage observations (Korean)](https://www.weather.go.kr/w/forecast/life/seasonal-observation/autumn-leaves.do)
 
-Last reviewed: **October 26, 2026**. This is the English edition of the Korean guide, with the same forecast tables, images and planned regional choices. Korean place names and observation terms have been added to help visitors navigate local sources. Photographs are not presented as observations of today's conditions.
+Last reviewed: **October 26, 2026**. This is the English edition of the Korean guide, with the same forecast tables and images. Korean place names and observation terms have been added to help visitors navigate local sources. Photographs are not presented as observations of today's conditions.

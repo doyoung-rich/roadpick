@@ -136,17 +136,6 @@ Không. Cơ quan xuất nhập cảnh quyết định cuối cùng.
 
 ## 9. Tiếp tục chuẩn bị chuyến đi Hàn Quốc
 
-Các bài dưới đây **mới là kế hoạch, chưa xuất bản**. Chúng tôi sẽ thêm đường dẫn thật sau khi đăng.
-
-| Bài dự kiến | Trạng thái |
-| --- | --- |
-| K-ETA cho công dân Hoa Kỳ | Dự kiến |
-| Cách điền e-Arrival Card Hàn Quốc | Dự kiến |
-| Quy trình đến sân bay Incheon | Dự kiến |
-| Danh sách chuẩn bị du lịch Hàn Quốc | Dự kiến |
-| SIM hay eSIM tại Hàn Quốc | Dự kiến |
-| Hướng dẫn giao thông Seoul | Dự kiến |
-
 :::cta hand
 Đến Hàn Quốc vào mùa thu? Bài này đã có thể đọc.
 [Lịch lá thu Hàn Quốc 2026 và bảng chuẩn bị](/vi/articles/autumn-foliage-peak-2026/)

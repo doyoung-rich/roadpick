@@ -112,7 +112,6 @@ primaryCtaUrl: https://english.visitkorea.or.kr/svc/contents/contentsView.do?vco
 [日本語の旅行記事一覧](/ja/category/travel/)
 :::
 
-NAVERマップ、明洞・聖水の買い物、両替・支払い、仁川空港の出国手続きは後続記事の候補です。未発行の個別記事へのリンクは設けていません。
 
 ## 公式資料・確認日
 

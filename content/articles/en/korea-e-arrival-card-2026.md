@@ -130,13 +130,6 @@ The official FAQ allows electronic submission after arrival but before immigrati
 
 ## What to read next
 
-The following are future Roadpick article ideas. They are not yet linked as published guides:
-
-- How to use NAVER Map in Korea
-- Incheon Airport to Seoul transportation guide
-- Korea tax refund and shopping guide
-- K-ETA eligibility explained
-
 :::cta hand
 Browse articles already available on Roadpick.
 [Browse English Articles](/en/articles/)
