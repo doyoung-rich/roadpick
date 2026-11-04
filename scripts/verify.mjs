@@ -162,6 +162,18 @@ assert.equal(path.dirname(path.resolve(fixture)), tempRoot);
 assert(path.basename(fixture).startsWith('roadpick-verify-'));
 try {
   for (const directory of ['scripts', 'content', 'assets']) await cp(path.join(root, directory), path.join(fixture, directory), { recursive: true });
+  // Give the empty-category fixture its own state as live finance articles grow.
+  async function clearFixtureFinance(directory) {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const file = path.join(directory, entry.name);
+      if (entry.isDirectory()) await clearFixtureFinance(file);
+      else if (entry.name.endsWith('.md')) {
+        const source = await readFile(file, 'utf8');
+        if (/^category: finance\r?$/m.test(source)) await writeFile(file, source.replace(/^status: ready\r?$/m, 'status: draft'));
+      }
+    }
+  }
+  await clearFixtureFinance(path.join(fixture, 'content/articles'));
   const fixtureSite = { ...site, preview: false };
   const config = path.join(fixture, 'content/site.json');
   const env = { ...process.env, SITE_URL: 'https://roadpick.store', BASE_PATH: '' };
