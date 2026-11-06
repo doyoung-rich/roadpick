@@ -360,6 +360,9 @@ await writeFile(path.join(out, '404.html'), fallback404.replace(/<main[\s\S]*?<\
 await writeFile(path.join(out, '.nojekyll'), '');
 await writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\n${!site.preview && siteUrl ? `Sitemap: ${siteUrl}/sitemap.xml\n` : ''}`);
 if (!site.preview) {
+  const adsTxt = (await readFile(path.join(root, 'content/ads.txt'), 'utf8')).trim();
+  if (!/^google\.com, pub-\d{16}, DIRECT, f08c47fec0942fa0$/.test(adsTxt)) throw new Error('Invalid confirmed AdSense ads.txt record.');
+  await writeFile(path.join(out, 'ads.txt'), `${adsTxt}\n`);
   await writeFile(path.join(out, 'sitemap.xml'), sitemapXml(builtRoutes, siteUrl));
   for (const lang of languages) {
     const feedRoute = localizedRoute('rss.xml', lang);

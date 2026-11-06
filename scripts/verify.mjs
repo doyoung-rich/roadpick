@@ -9,6 +9,11 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = name => readFile(path.join(root, name), 'utf8');
 const site = JSON.parse(await read('content/site.json'));
+if (!site.preview) {
+  const adsTxt = (await read('content/ads.txt')).trim();
+  assert.match(adsTxt, /^google\.com, pub-\d{16}, DIRECT, f08c47fec0942fa0$/);
+  assert.equal(await read('dist/ads.txt'), `${adsTxt}\n`, 'Public ads.txt matches the operator-supplied publisher record.');
+}
 const origin = (process.env.SITE_URL || site.siteUrl).replace(/\/$/, '');
 const base = (process.env.BASE_PATH ?? site.basePath).replace(/\/$/, '');
 const unescape = value => value.replace(/&(amp|quot|lt|gt|#39);/g, x => ({'&amp;':'&', '&quot;':'"', '&lt;':'<', '&gt;':'>', '&#39;':"'"}[x]));
@@ -193,6 +198,7 @@ try {
   await writeFile(config, JSON.stringify({ ...fixtureSite, preview: true }));
   result = build(); assert.equal(result.status, 0, result.stderr);
   assert((await readFile(path.join(fixture, 'dist/articles/application-guide/index.html'), 'utf8')).includes('content="noindex,follow"'));
+  await assert.rejects(readFile(path.join(fixture, 'dist/ads.txt')), { code: 'ENOENT' }, 'Preview builds do not publish ads.txt.');
   assert((await readFile(path.join(fixture, 'dist/category/finance/index.html'), 'utf8')).includes('class="empty-state"'));
   await writeFile(config, JSON.stringify(fixtureSite));
   const samples = [];
